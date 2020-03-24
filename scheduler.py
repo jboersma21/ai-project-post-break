@@ -14,6 +14,17 @@ from openpyxl import load_workbook
 import data_import
 from world_objects import World
 from config import configuration
+from math import exp
+
+# 0 <= gamma < 1 (experiment with different values)
+GAMMA = 0.75
+
+# input to logistic function (experiment with different values)
+X_0 = 0
+K = 1
+
+# negative constant representing cost to country of proposing schedule that fails (experiment with)
+C = -2
 
 
 # Implement state manager to traverse through of current state, future states, and previous states
@@ -21,8 +32,8 @@ class WorldStateManager(object):
 
     def __init__(self, depth_bound, initial_resources, initial_countries):
         self.cur_state = World(d_bound=depth_bound, weight_dict=initial_resources, country_dict=initial_countries)
-        self.future_states = list()    # priority queue that store states based on big-u
-        self.prev_states = list()      # stack of explored state big-Us
+        self.future_states = list()  # priority queue that store states based on big-u
+        self.prev_states = list()  # stack of explored state big-Us
         self.depth = 0
 
     # unfinished depth-bound search algorithm
@@ -34,7 +45,7 @@ class WorldStateManager(object):
             # to-do: add depth-bounded logic
 
     def go_to_next_state(self):
-        self.future_states = list()                         # clear old list of successors?
+        self.future_states = list()  # clear old list of successors?
         for world in generate_successors(self.cur_state):
             self.add_future_state(world_state=world)
         self.prev_states.append(self.cur_state.get_big_u())
@@ -54,6 +65,50 @@ class WorldStateManager(object):
 
     def get_cur_big_u(self):
         return self.cur_state.get_big_u()
+
+    ###############################################
+    #           NEW CODE FOR POST-BREAK           #
+    ###############################################
+
+    """
+       Calculates the un-discounted reward to a country.
+       @param end_state_q (float) - state quality of end state
+       @param start_state_q (float) - state quality of start state
+       @return (float) - un-discounted reward; can be positive or negative
+    """
+
+    def u_reward(self, end_state_q, start_state_q):
+        return end_state_q - start_state_q  # change so parameters are country & schedule?
+        # same w/ d_reward below
+
+    """
+        Calculates the discounted reward to a country.
+        @param end_state_q (float) - state quality of end state
+        @param start_state_q (float) - state quality of start state
+        @param N (int) - number of time steps in a schedule
+        @return (float) - discounted reward; can be positive or negative
+     """
+
+    def d_reward(self, end_state_q, start_state_q, N):
+        return (GAMMA ** N) * (end_state_q - start_state_q)
+
+    """
+        Calculates the logistic function value for a country.
+        Determines the probability that a country will participate in a given schedule.
+        @param dr (float) - discounted reward
+        @return (float) - logistic fxn probability 
+    """
+
+    def logistic_fxn(self, dr):
+        return 1 / (1 + exp((-K) * (dr - X_0)))
+
+    # product of each individual country probabilities (logistic fxn values)
+    def prob_success(self):
+        return
+
+    def expected_utility(self):
+        # [ prob_success(schedule_j) * d_reward(country_i, schedule_j) ] + [ (1 - prob_success(schedule_j)) * C ]
+        return
 
 
 def generate_successors(current_state):
@@ -100,7 +155,7 @@ def output_successors_to_excel(file_name, successors):
     cur_col = 1
 
     for idx, state in enumerate(successors):
-        if idx > 9:     # only print first 10 successors
+        if idx > 9:  # only print first 10 successors
             break
         ws.cell(row=cur_row, column=cur_col).value = 'Successor'
         cur_col += 1
