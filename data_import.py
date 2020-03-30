@@ -8,6 +8,8 @@ Colin Moody, Ohad Beck, Charlie MacVicar, Jake Boersma
 """
 import string
 from openpyxl import load_workbook
+from config import *
+import re
 
 DATA_FILE = 'data/Pre_Break/Initial-World.xlsx'
 
@@ -28,6 +30,7 @@ def create_resource_dict(file_name=RESOURCE_DATA_FILE):
     for row in range(2, resources_sheet.max_row + 1):
         key = get_val(resources_sheet, 'A', row)
         value = get_val(resources_sheet, 'B', row)
+        config_new["resources"].append(key)             # adding resources to config file
         resource_dict[key] = value
     return resource_dict
 
@@ -53,6 +56,46 @@ def create_country_dict(file_name=INITIAL_STATE_DATA_FILE):
         resrc_dict["R23'"] = 0
         country_dict[key] = resrc_dict
     return country_dict
+
+def read_operator_def(file_name=OPERATOR_DEF_DATA_FILE):
+    """
+    FILL IN
+    """
+    wb = load_workbook(file_name)
+    op_sheet = wb.get_sheet_by_name('Operators')
+    for row in range(2, op_sheet.max_row + 1):
+        op_name = get_val(op_sheet, 'A', row)
+        if op_name is not None:
+            config_new["transformations"].append(op_name)
+        op_str = get_val(op_sheet, 'B', row)
+        if op_str is not None:
+            splits = re.split(r'[()\s]\s*', str(op_str))
+
+            config_new["definitions"].update({op_name: {"in": {}, "out": {}}})
+
+            input_idx = 0
+            output_idx = 0
+            counter = 0
+            for x in splits:
+                if x == '':
+                    splits.remove(x)
+
+            for token in splits:
+                if token == 'INPUTS':
+                    input_idx = counter
+                if token == 'OUTPUTS':
+                    output_idx = counter
+                counter += 1
+            for i in range(input_idx + 1, output_idx, 2):
+                if splits[i] != '' and splits[i + 1] != '':
+                    config_new["definitions"][op_name]["in"].update({splits[i]: splits[i + 1]})
+
+            for j in range(output_idx + 1, len(splits), 2):
+                if splits[j] != '' and splits[j + 1] != '':
+                    config_new["definitions"][op_name]["out"].update({splits[j]: splits[j + 1]})
+
+
+    print(config_new)
 
 
 def col_letter(col_num):
@@ -81,4 +124,4 @@ def print_country_dict(dic):
 
 
 if __name__ == '__main__':
-    print(create_country_dict())
+    read_operator_def('data/operator_def_1.xlsx')

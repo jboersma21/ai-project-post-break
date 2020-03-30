@@ -23,3 +23,11 @@ configuration = {
         "out": {"R1": 5.0, "R23": 1.0, "R23'": 1.0}
     }
 }
+
+config_new = {
+    "transformations": [],
+    "resources": [],
+    "definitions": {
+    }
+}
+
