@@ -194,20 +194,25 @@ def output_successors_to_excel(file_name, successors):
     wb.save(file_name)
 
 
-def run_successor_test(file_name):
+def run_successor_test(resources_filename, initial_state_filename, output_schedule_filename):
     my_state_manager = WorldStateManager(depth_bound=3,
-                                         initial_resources=data_import.create_resource_dict(file_name=file_name),
-                                         initial_countries=data_import.create_country_dict(file_name=file_name))
-    output_successors_to_excel(file_name=file_name, successors=generate_successors(my_state_manager.cur_state))
+                                         initial_resources=data_import.create_resource_dict(file_name=resources_filename),
+                                         initial_countries=data_import.create_country_dict(file_name=initial_state_filename))
+    output_successors_to_excel(file_name=output_schedule_filename, successors=generate_successors(my_state_manager.cur_state))
 
-    print('\nExample Search on {}:'.format(file_name))
+    print('\nExample Search on {}:'.format(resources_filename))
     my_state_manager.execute_search()
     print('\n')
 
 
 def main(argv):
-    for name in ['Test1', 'Test2', 'Test3', 'Test4']:
-        run_successor_test(file_name='data/Initial-World-{}.xlsx'.format(name))
+    # for name in ['Test1', 'Test2', 'Test3', 'Test4']:
+    #     run_successor_test(file_name='data/Pre_Break/Initial-World-{}.xlsx'.format(name))
+
+    for name in ['1']:
+        run_successor_test(resources_filename='data/resources_{}.xlsx'.format(name),
+                           initial_state_filename='data/initial_state_{}.xlsx'.format(name),
+                           output_schedule_filename='data/output_{}.xlsx'.format(name))
 
 
 if __name__ == "__main__":
