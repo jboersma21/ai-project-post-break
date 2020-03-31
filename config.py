@@ -24,8 +24,8 @@ configuration = {
     }
 }
 
-config_new = {
-    "transformations": [],
+ops_config = {
+    "operations": [],
     "resources": [],
     "definitions": {
     }

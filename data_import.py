@@ -10,7 +10,7 @@ import string
 from openpyxl import load_workbook
 from config import *
 import re
-# from ast import literal_eval
+from pprint import *
 
 DATA_FILE = 'data/Pre_Break/Initial-World.xlsx'
 
@@ -31,7 +31,7 @@ def create_resource_dict(file_name=RESOURCE_DATA_FILE):
     for row in range(2, resources_sheet.max_row + 1):
         key = get_val(resources_sheet, 'A', row)
         value = get_val(resources_sheet, 'B', row)
-        config_new["resources"].append(key)             # adding resources to config file
+        ops_config["resources"].append(key)             # adding resources to config file
         resource_dict[key] = value
     return resource_dict
 
@@ -58,31 +58,43 @@ def create_country_dict(file_name=INITIAL_STATE_DATA_FILE):
         country_dict[key] = resrc_dict
     return country_dict
 
+
+"""
+    use operator_def_3.xlsx
+"""
 def read_operator_def_config(file_name=OPERATOR_DEF_DATA_FILE):
-    """
-    FILL IN
-    """
     wb = load_workbook(file_name)
     op_sheet = wb.get_sheet_by_name('Operators')
 
     for row in range(2, op_sheet.max_row + 1):
-        op_name = get_val(op_sheet, 'B', row)
-        if op_name is not None:
-            config_new["transformations"].append(op_name)
-        op_str = get_val(op_sheet, 'C', row)
-        if op_str is not None:
-            splits = re.split(r'[()\s]\s*', str(op_str))
+        op_type = get_val(op_sheet, 'A', row)       # Operation type (transfer or transform)
+        op_name = get_val(op_sheet, 'B', row)       # Name of the operation (alloys_transform)
+        op_str = get_val(op_sheet, 'C', row)        # Actual operator definition
 
-            config_new["definitions"].update({op_name: {"in": {}, "out": {}}})
+        if op_str is not None:
+            ops_config["operations"].append(op_name)
+            split_lst = re.split(r'[()\s]\s*', str(op_str))
+            loop = True
+            while loop:
+                try:
+                    split_lst.remove('')
+                except ValueError:
+                    loop = False
+        else:
+            pprint(ops_config)
+            return
+
+        if op_type == 'TRANSFER':
+            ops_config["definitions"].update({op_name: {"from": split_lst[1], "to": split_lst[2],
+                                                        "resrc": split_lst[3], "amt": split_lst[4]}})
+
+        else:
+            ops_config["definitions"].update({op_name: {"in": {}, "out": {}}})
 
             input_idx = 0
             output_idx = 0
             counter = 0
-            for x in splits:
-                if x == '':
-                    splits.remove(x)
-
-            for token in splits:
+            for token in split_lst:
                 if token == 'INPUTS':
                     input_idx = counter
                 if token == 'OUTPUTS':
@@ -90,89 +102,73 @@ def read_operator_def_config(file_name=OPERATOR_DEF_DATA_FILE):
                 counter += 1
 
             for i in range(input_idx + 1, output_idx, 2):
-                if splits[i] != '' and splits[i + 1] != '':
-                    config_new["definitions"][op_name]["in"].update({splits[i]: int(splits[i + 1])})
+                    ops_config["definitions"][op_name]["in"].update({split_lst[i]: int(split_lst[i + 1])})
 
-            for j in range(output_idx + 1, len(splits), 2):
-                if splits[j] != '' and splits[j + 1] != '':
-                    config_new["definitions"][op_name]["out"].update({splits[j]: int(splits[j + 1])})
+            for j in range(output_idx + 1, len(split_lst), 2):
+                    ops_config["definitions"][op_name]["out"].update({split_lst[j]: int(split_lst[j + 1])})
 
-    print(config_new)
-
-def read_operator_def_tuple(file_name=OPERATOR_DEF_DATA_FILE):
-    """
+"""
     use operator_def_3.xlsx
-    """
+"""
+def read_operator_def_tuple(file_name=OPERATOR_DEF_DATA_FILE):
+
     wb = load_workbook(file_name)
     op_sheet = wb.get_sheet_by_name('Operators')
+    op_dict = {}
 
     op_header = ('TRANSFORM', '?C')
     in_header = tuple(['INPUTS'])
     out_header = tuple(['OUTPUTS'])
 
     for row in range(2, op_sheet.max_row + 1):
-        out_lst = []
-        in_lst = []
-        op_type = get_val(op_sheet, 'A', row)
-        op_str = get_val(op_sheet, 'C', row)
-        if op_str is not None and op_type == 'TRANSFER':
-            splits = re.split(r'[()\s]\s*', str(op_str))
+        op_type = get_val(op_sheet, 'A', row)  # Operation type (transfer or transform)
+        op_name = get_val(op_sheet, 'B', row)  # Name of the operation (alloys_transform)
+        op_str = get_val(op_sheet, 'C', row)  # Actual operator definition
 
-            for x in splits:
-                if x == '':
-                    splits.remove(x)
-            var_tup = (splits[3], splits[4])
+        if op_str is not None:
+            split_lst = re.split(r'[()\s]\s*', str(op_str))
+            loop = True
+            while loop:
+                try:
+                    split_lst.remove('')
+                except ValueError:
+                    loop = False
+        else:                                       # ran out of rows to read in Excel file
+            pprint(op_dict)
+            return op_dict
+
+        if op_type == 'TRANSFER':
+            var_tup = (split_lst[3], split_lst[4])
 
             join_tup = ('TRANSFER', '?Cj1', '?Cj2', var_tup)
-            print(join_tup)
-
-        elif op_str is not None:
-            splits = re.split(r'[()\s]\s*', str(op_str))
-
+            op_dict[op_name] = join_tup
+        else:                                       # op_type == TRANSFORM
+            out_lst = []
+            in_lst = []
             input_idx = 0
             output_idx = 0
             counter = 0
-            for x in splits:
-                if x == '':
-                    splits.remove(x)
-
-            for token in splits:
+            for token in split_lst:
                 if token == 'INPUTS':
                     input_idx = counter
                 if token == 'OUTPUTS':
                     output_idx = counter
                 counter += 1
-
             for i in range(input_idx + 1, output_idx, 2):
-                if splits[i] != '' and splits[i + 1] != '':
-                    in_tup = (splits[i], int(splits[i + 1]))
-                    in_lst.append(in_tup)
+                in_tup = (split_lst[i], int(split_lst[i + 1]))
+                in_lst.append(in_tup)
 
-            for j in range(output_idx + 1, len(splits), 2):
-                if splits[j] != '' and splits[j + 1] != '':
-                    out_tup = (splits[j], int(splits[j + 1]))
-                    out_lst.append(out_tup)
+            for j in range(output_idx + 1, len(split_lst), 2):
+                out_tup = (split_lst[j], int(split_lst[j + 1]))
+                out_lst.append(out_tup)
 
             in_part = in_header + tuple(in_lst)
             out_part = out_header + tuple(out_lst)
             join_tup = (op_header + (in_part, out_part))
-            print(join_tup)
 
-# def read_operator_tuple(file_name=OPERATOR_DEF_DATA_FILE):
-#     """
-#     FILL IN
-#     """
-#     wb = load_workbook(file_name)
-#     op_sheet = wb.get_sheet_by_name('Operators')
-#     for row in range(2, op_sheet.max_row + 1):
-#         op_str = get_val(op_sheet, 'B', row)
-#         if op_str is not None:
-#             tup1 = literal_eval(op_str)
-#             print(tup1[0:])
-#             print(tup1[3])
-#             #print(op_str)
+            op_dict[op_name] = join_tup
 
-
+# use 'data/operator_def_2.xlsx' with this setup
 # def op_excel_read(file_name=OPERATOR_DEF_DATA_FILE):
 #     """
 #         FILL IN
@@ -219,7 +215,8 @@ def print_country_dict(dic):
 
 
 if __name__ == '__main__':
-    read_operator_def_tuple('data/operator_def_3.xlsx')
-    read_operator_def_config('data/operator_def_4.xlsx')
+    #read_operator_def_tuple('data/operator_def_3.xlsx')
+    create_resource_dict('data/resources_1.xlsx')
+    read_operator_def_config('data/operator_def_3.xlsx')
 
 
