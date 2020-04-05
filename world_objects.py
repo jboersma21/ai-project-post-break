@@ -8,8 +8,17 @@ Colin Moody, Ohad Beck, Charlie MacVicar, Jake Boersma
 """
 
 from copy import deepcopy
-from config import configuration
+from config import *
 from auxiliary.inequality_measures import *
+from math import exp
+
+
+# 0 <= gamma < 1 (experiment with different values)
+GAMMA = 0.75
+
+# input to logistic function (experiment with different values)
+X_0 = 0
+K = 1
 
 
 # Represents a single state (i.e. an individual world)
@@ -84,15 +93,47 @@ class Country(object):
         population = self.resources['R1']
         return (housing_val + alloy_val + electronics_val + waste_val) / population
 
+    """
+          Calculates the un-discounted reward to a country.
+          @param end_state_q (float) - state quality of end state
+          @param start_state_q (float) - state quality of start state
+          @return (float) - un-discounted reward; can be positive or negative
+    """
+
+    def u_reward(self, end_state_q, start_state_q):
+        return end_state_q - start_state_q  # change so parameters are country & schedule?
+        # same w/ d_reward below
+
+    """
+        Calculates the discounted reward to a country.
+        @param end_state_q (float) - state quality of end state
+        @param start_state_q (float) - state quality of start state
+        @param N (int) - number of time steps in a schedule
+        @return (float) - discounted reward; can be positive or negative
+     """
+
+    def d_reward(self, end_state_q, start_state_q, N):
+        return (GAMMA ** N) * (end_state_q - start_state_q)
+
+    """
+            Calculates the logistic function value for a country.
+            Determines the probability that a country will participate in a given schedule.
+            @param dr (float) - discounted reward
+            @return (float) - logistic fxn probability 
+        """
+
+    def logistic_fxn(self, dr):
+        return 1 / (1 + exp((-K) * (dr - X_0)))
+
     def transform(self, transformation, bins=1):
         used = dict()
-        for resource, amount in configuration[transformation]["in"].items():
+        for resource, amount in configuration['definitions'][transformation]["in"].items():
             amount *= bins
             if self.resources[resource] < amount:
                 return False
             used[resource] = amount
         for resource, amount in used.items():
             self.resources[resource] -= amount
-        for resource, amount in configuration[transformation]["out"].items():
+        for resource, amount in configuration['definitions'][transformation]["out"].items():
             self.resources[resource] += amount * bins
         return True

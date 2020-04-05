@@ -26,12 +26,12 @@ def create_resource_dict(file_name=RESOURCE_DATA_FILE):
     Values: weight of corresponding resource
     """
     wb = load_workbook(file_name)
-    resources_sheet = wb.get_sheet_by_name('Resources')
+    resources_sheet = wb['Resources']
     resource_dict = {}
     for row in range(2, resources_sheet.max_row + 1):
         key = get_val(resources_sheet, 'A', row)
         value = get_val(resources_sheet, 'B', row)
-        ops_config["resources"].append(key)             # adding resources to config file
+        configuration["resources"].append(key)             # adding resources to config file
         resource_dict[key] = value
     return resource_dict
 
@@ -43,7 +43,7 @@ def create_country_dict(file_name=INITIAL_STATE_DATA_FILE):
     Values: dictionary where key = resource_name and value = resource_amount
     """
     wb = load_workbook(file_name)
-    country_sheet = wb.get_sheet_by_name('Countries')
+    country_sheet = wb['Countries']
     country_dict = {}
     for row in range(2, country_sheet.max_row + 1):
         key = get_val(country_sheet, 'A', row)
@@ -52,9 +52,6 @@ def create_country_dict(file_name=INITIAL_STATE_DATA_FILE):
             resrc_key = get_val(country_sheet, col_letter(col), 1)
             resrc_value = get_val(country_sheet, col_letter(col), row)
             resrc_dict[resrc_key] = resrc_value
-        resrc_dict["R21'"] = 0
-        resrc_dict["R22'"] = 0
-        resrc_dict["R23'"] = 0
         country_dict[key] = resrc_dict
     return country_dict
 
@@ -64,7 +61,7 @@ def create_country_dict(file_name=INITIAL_STATE_DATA_FILE):
 """
 def read_operator_def_config(file_name=OPERATOR_DEF_DATA_FILE):
     wb = load_workbook(file_name)
-    op_sheet = wb.get_sheet_by_name('Operators')
+    op_sheet = wb['Operators']
 
     for row in range(2, op_sheet.max_row + 1):
         op_type = get_val(op_sheet, 'A', row)       # Operation type (transfer or transform)
@@ -72,7 +69,7 @@ def read_operator_def_config(file_name=OPERATOR_DEF_DATA_FILE):
         op_str = get_val(op_sheet, 'C', row)        # Actual operator definition
 
         if op_str is not None:
-            ops_config["operations"].append(op_name)
+            configuration["operations"].append(op_name)
             split_lst = re.split(r'[()\s]\s*', str(op_str))
             loop = True
             while loop:
@@ -81,15 +78,14 @@ def read_operator_def_config(file_name=OPERATOR_DEF_DATA_FILE):
                 except ValueError:
                     loop = False
         else:
-            pprint(ops_config)
             return
 
         if op_type == 'TRANSFER':
-            ops_config["definitions"].update({op_name: {"from": split_lst[1], "to": split_lst[2],
-                                                        "resrc": split_lst[3], "amt": split_lst[4]}})
+            configuration["definitions"].update({op_name: {"from": split_lst[1], "to": split_lst[2],
+                                                        "resrc": str(split_lst[3]), "amt": split_lst[4]}})
 
         else:
-            ops_config["definitions"].update({op_name: {"in": {}, "out": {}}})
+            configuration["definitions"].update({op_name: {"in": {}, "out": {}}})
 
             input_idx = 0
             output_idx = 0
@@ -102,10 +98,10 @@ def read_operator_def_config(file_name=OPERATOR_DEF_DATA_FILE):
                 counter += 1
 
             for i in range(input_idx + 1, output_idx, 2):
-                    ops_config["definitions"][op_name]["in"].update({split_lst[i]: int(split_lst[i + 1])})
+                configuration["definitions"][op_name]["in"].update({split_lst[i]: int(split_lst[i + 1])})
 
             for j in range(output_idx + 1, len(split_lst), 2):
-                    ops_config["definitions"][op_name]["out"].update({split_lst[j]: int(split_lst[j + 1])})
+                configuration["definitions"][op_name]["out"].update({split_lst[j]: int(split_lst[j + 1])})
 
 """
     use operator_def_3.xlsx
@@ -113,7 +109,7 @@ def read_operator_def_config(file_name=OPERATOR_DEF_DATA_FILE):
 def read_operator_def_tuple(file_name=OPERATOR_DEF_DATA_FILE):
 
     wb = load_workbook(file_name)
-    op_sheet = wb.get_sheet_by_name('Operators')
+    op_sheet = wb['Operators']
     op_dict = {}
 
     op_header = ('TRANSFORM', '?C')

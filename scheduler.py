@@ -13,15 +13,12 @@ from openpyxl import load_workbook
 
 import data_import
 from world_objects import World
-from config import configuration
-from math import exp
+from config import *
 
-# 0 <= gamma < 1 (experiment with different values)
-GAMMA = 0.75
 
-# input to logistic function (experiment with different values)
-X_0 = 0
-K = 1
+
+
+
 
 # negative constant representing cost to country of proposing schedule that fails (experiment with)
 C = -2
@@ -66,41 +63,9 @@ class WorldStateManager(object):
     def get_cur_big_u(self):
         return self.cur_state.get_big_u()
 
-    ###############################################
-    #           NEW CODE FOR POST-BREAK           #
-    ###############################################
 
-    """
-       Calculates the un-discounted reward to a country.
-       @param end_state_q (float) - state quality of end state
-       @param start_state_q (float) - state quality of start state
-       @return (float) - un-discounted reward; can be positive or negative
-    """
 
-    def u_reward(self, end_state_q, start_state_q):
-        return end_state_q - start_state_q  # change so parameters are country & schedule?
-        # same w/ d_reward below
 
-    """
-        Calculates the discounted reward to a country.
-        @param end_state_q (float) - state quality of end state
-        @param start_state_q (float) - state quality of start state
-        @param N (int) - number of time steps in a schedule
-        @return (float) - discounted reward; can be positive or negative
-     """
-
-    def d_reward(self, end_state_q, start_state_q, N):
-        return (GAMMA ** N) * (end_state_q - start_state_q)
-
-    """
-        Calculates the logistic function value for a country.
-        Determines the probability that a country will participate in a given schedule.
-        @param dr (float) - discounted reward
-        @return (float) - logistic fxn probability 
-    """
-
-    def logistic_fxn(self, dr):
-        return 1 / (1 + exp((-K) * (dr - X_0)))
 
     # product of each individual country probabilities (logistic fxn values)
     def prob_success(self):
@@ -116,16 +81,17 @@ def generate_successors(current_state):
 
     # Add every transformation for every country
     for country in current_state.countries.keys():
-        for operator in configuration["transformations"]:
-            tmp_world = current_state.get_deep_copy()
-            bins = 1
-            while tmp_world.countries[country].transform(transformation=operator, bins=bins):
-                ins = [i * bins for i in configuration[operator]["in"].values()]
-                outs = [i * bins for i in configuration[operator]["out"].values()]
-                tmp_world.set_prev_op('{} (in={} out={}) (bins={})'.format(operator, ins, outs, bins))
-                successors.append(tmp_world)
-                bins += 1
+        for operator in configuration["definitions"]:
+            if operator != 'transfer':                          # FIX LATER (MAYBE DONT READ IN TRANSFERS)
                 tmp_world = current_state.get_deep_copy()
+                bins = 1
+                while tmp_world.countries[country].transform(transformation=operator, bins=bins):
+                    ins = [i * bins for i in configuration['definitions'][operator]["in"].values()]
+                    outs = [i * bins for i in configuration['definitions'][operator]["out"].values()]
+                    tmp_world.set_prev_op('{} (in={} out={}) (bins={})'.format(operator, ins, outs, bins))
+                    successors.append(tmp_world)
+                    bins += 1
+                    tmp_world = current_state.get_deep_copy()
 
     # Add every transfer for every pair of countries (both ways)
     for exporter in current_state.countries.keys():
@@ -143,13 +109,12 @@ def generate_successors(current_state):
 
     return successors
 
-
 def output_successors_to_excel(file_name, successors):
     wb = load_workbook(file_name)
     sheet_name = 'Successors (Test Results)'
-    if sheet_name in wb.get_sheet_names():
-        sheet = wb.get_sheet_by_name(sheet_name)
-        wb.remove_sheet(sheet)
+    if sheet_name in wb.sheetnames:
+        sheet = wb[sheet_name]
+        wb.remove(sheet)
     ws = wb.create_sheet(sheet_name)
     cur_row = 1
     cur_col = 1
@@ -194,7 +159,9 @@ def output_successors_to_excel(file_name, successors):
     wb.save(file_name)
 
 
-def run_successor_test(resources_filename, initial_state_filename, output_schedule_filename):
+
+def run_successor_test(resources_filename, initial_state_filename, operator_def_filename, output_schedule_filename):
+    data_import.read_operator_def_config(file_name=operator_def_filename)
     my_state_manager = WorldStateManager(depth_bound=3,
                                          initial_resources=data_import.create_resource_dict(file_name=resources_filename),
                                          initial_countries=data_import.create_country_dict(file_name=initial_state_filename))
@@ -212,6 +179,7 @@ def main(argv):
     for name in ['1']:
         run_successor_test(resources_filename='data/resources_{}.xlsx'.format(name),
                            initial_state_filename='data/initial_state_{}.xlsx'.format(name),
+                           operator_def_filename='data/operator_def_3.xlsx',
                            output_schedule_filename='data/output_{}.xlsx'.format(name))
 
 
