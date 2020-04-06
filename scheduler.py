@@ -36,16 +36,16 @@ class WorldStateManager(object):
 
     def go_to_next_state(self):
         self.future_states = list()  # clear old list of successors?
+        self.cur_depth += 1          # increment depth before updating values?
         for world in generate_successors(self.cur_state):
-            self.add_future_state(world_state=world)
-            for country in world.countries:
-                world.countries[country].update_c_prob_success()
+            for country in world.countries:         # update all measures for each successor before adding future state
                 world.countries[country].update_discount_reward()
-                world.countries[country].update_exp_utility(world)
+                world.countries[country].update_c_prob_success()
                 world.prob_success = world.prob_success * world.countries[country].c_prob_success
+                world.countries[country].update_exp_utility(world)
+            self.add_future_state(world_state=world)
         self.prev_states.append(self.cur_state.get_big_u())
         self.cur_state = self.pop_future_state()
-        self.cur_depth += 1
 
     def add_future_state(self, world_state):
         heapq.heappush(self.future_states, (world_state.get_big_u() * -1, world_state))

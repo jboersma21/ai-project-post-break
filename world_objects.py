@@ -131,7 +131,7 @@ class Country(object):
         self.c_prob_success = self.logistic_fxn(self.discount_reward)
 
     def update_exp_utility(self, world):
-        return (world.prob_success * self.discount_reward) + ((1 - world.prob_success) * C)
+        self.exp_utility = (world.prob_success * self.discount_reward) + ((1 - world.prob_success) * C)
 
     def transform(self, transformation, bins=1):
         used = dict()
