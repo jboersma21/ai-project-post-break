@@ -16,14 +16,6 @@ from world_objects import World
 from config import *
 
 
-
-
-
-
-# negative constant representing cost to country of proposing schedule that fails (experiment with)
-C = -2
-
-
 # Implement state manager to traverse through of current state, future states, and previous states
 class WorldStateManager(object):
 
@@ -31,7 +23,7 @@ class WorldStateManager(object):
         self.cur_state = World(d_bound=depth_bound, weight_dict=initial_resources, country_dict=initial_countries)
         self.future_states = list()  # priority queue that store states based on big-u
         self.prev_states = list()  # stack of explored state big-Us
-        self.depth = 0
+        self.cur_depth = 0
 
     # unfinished depth-bound search algorithm
     def execute_search(self):
@@ -39,15 +31,21 @@ class WorldStateManager(object):
         while self.cur_state.get_big_u() not in self.prev_states:
             self.go_to_next_state()
             self.print_cur_state_info()
+
             # to-do: add depth-bounded logic
 
     def go_to_next_state(self):
         self.future_states = list()  # clear old list of successors?
         for world in generate_successors(self.cur_state):
             self.add_future_state(world_state=world)
+            for country in world.countries:
+                world.countries[country].update_c_prob_success()
+                world.countries[country].update_discount_reward()
+                world.countries[country].update_exp_utility(world)
+                world.prob_success = world.prob_success * world.countries[country].c_prob_success
         self.prev_states.append(self.cur_state.get_big_u())
         self.cur_state = self.pop_future_state()
-        self.depth += 1
+        self.cur_depth += 1
 
     def add_future_state(self, world_state):
         heapq.heappush(self.future_states, (world_state.get_big_u() * -1, world_state))
@@ -56,19 +54,19 @@ class WorldStateManager(object):
         return heapq.heappop(self.future_states)[1]
 
     def print_cur_state_info(self):
-        if self.depth > 0:
+        if self.cur_depth > 0:
             print('\t-> Operator: {}'.format(self.cur_state.prev_op))
-        print('State {}:\t{}'.format(self.depth, self.get_cur_big_u()))
+        print('State {}:\t{}'.format(self.cur_depth, self.get_cur_big_u()))
 
     def get_cur_big_u(self):
         return self.cur_state.get_big_u()
 
-
-
-
+    def get_cur_depth(self):
+        return self.cur_depth
 
     # product of each individual country probabilities (logistic fxn values)
-    def prob_success(self):
+    def prob_success(self, world):
+
         return
 
     def expected_utility(self):

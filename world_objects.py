@@ -11,6 +11,7 @@ from copy import deepcopy
 from config import *
 from auxiliary.inequality_measures import *
 from math import exp
+from scheduler import *
 
 
 # 0 <= gamma < 1 (experiment with different values)
@@ -19,6 +20,9 @@ GAMMA = 0.75
 # input to logistic function (experiment with different values)
 X_0 = 0
 K = 1
+
+# negative constant representing cost to country of proposing schedule that fails (experiment with)
+C = -2
 
 
 # Represents a single state (i.e. an individual world)
@@ -30,6 +34,7 @@ class World(object):
         self.weights = weight_dict              # resources and their corresponding weights
         self.countries = {}                     # dictionary of country objects
         self.prev_op = None                     # store previous operation details
+        self.prob_success = 1
 
         for country in country_dict:
             name = country
@@ -83,6 +88,11 @@ class Country(object):
         self.name = name                          # country name
         self.resources = resource_dict            # dictionary containing amount of resources the country possesses
         self.weights = weight_dict                # dictionary containing resources and corresponding weights
+        self.init_state_q = self.little_u()       # initial state quality for country
+        self.discount_reward = 0
+        self.c_prob_success =  0
+        self.exp_utility = 0
+
 
     def little_u(self):
         housing_val = self.weights['R23']*(1 - (self.resources['R1']) / (2 * (self.resources['R23'] + 5)))
@@ -94,17 +104,6 @@ class Country(object):
         return (housing_val + alloy_val + electronics_val + waste_val) / population
 
     """
-          Calculates the un-discounted reward to a country.
-          @param end_state_q (float) - state quality of end state
-          @param start_state_q (float) - state quality of start state
-          @return (float) - un-discounted reward; can be positive or negative
-    """
-
-    def u_reward(self, end_state_q, start_state_q):
-        return end_state_q - start_state_q  # change so parameters are country & schedule?
-        # same w/ d_reward below
-
-    """
         Calculates the discounted reward to a country.
         @param end_state_q (float) - state quality of end state
         @param start_state_q (float) - state quality of start state
@@ -112,18 +111,27 @@ class Country(object):
         @return (float) - discounted reward; can be positive or negative
      """
 
-    def d_reward(self, end_state_q, start_state_q, N):
-        return (GAMMA ** N) * (end_state_q - start_state_q)
+    def d_reward(self, n):
+        return (GAMMA ** n) * (self.little_u() - self.init_state_q)
+        # country's current state quality minus its initial state quality
 
     """
             Calculates the logistic function value for a country.
             Determines the probability that a country will participate in a given schedule.
             @param dr (float) - discounted reward
             @return (float) - logistic fxn probability 
-        """
-
+    """
     def logistic_fxn(self, dr):
         return 1 / (1 + exp((-K) * (dr - X_0)))
+
+    def update_discount_reward(self):                                           # REFERENCE TEAM 5 FOR THIS DESIGN
+        self.discount_reward = self.d_reward(WorldStateManager.get_cur_depth)
+
+    def update_c_prob_success(self):
+        self.c_prob_success = self.logistic_fxn(self.discount_reward)
+
+    def update_exp_utility(self, world):
+        return (world.prob_success * self.discount_reward) + ((1 - world.prob_success) * C)
 
     def transform(self, transformation, bins=1):
         used = dict()
