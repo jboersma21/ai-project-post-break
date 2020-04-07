@@ -14,6 +14,7 @@ from openpyxl import load_workbook
 import data_import
 from world_objects import *
 from config import *
+from pprint import *
 
 
 # Implement state manager to traverse through of current state, future states, and previous states
@@ -22,33 +23,35 @@ class WorldStateManager(object):
     def __init__(self, depth_bound, initial_resources, initial_countries):
         self.cur_state = World(d_bound=depth_bound, weight_dict=initial_resources, country_dict=initial_countries)
         self.future_states = list()  # priority queue that store states based on big-u
-        self.prev_states = list()  # stack of explored state big-Us
+        self.prev_states = list()  # stack of explored states
         self.cur_depth = 0
 
     # unfinished depth-bound search algorithm
     def execute_search(self):
         self.print_cur_state_info()
-        while self.cur_state.get_big_u() not in self.prev_states:
+        while self.get_cur_eu() not in self.prev_states:
             self.go_to_next_state()
             self.print_cur_state_info()
-
             # to-do: add depth-bounded logic
 
     def go_to_next_state(self):
         self.future_states = list()  # clear old list of successors?
         self.cur_depth += 1          # increment depth before updating values?
+
         for world in generate_successors(self.cur_state):
             for country in world.countries:         # update all measures for each successor before adding future state
                 world.countries[country].update_discount_reward(self.cur_depth)
                 world.countries[country].update_c_prob_success()
                 world.prob_success = world.prob_success * world.countries[country].c_prob_success
-                world.countries[country].update_exp_utility(world)
+
+            world.update_exp_utility()
+            world.prob_success = 1
             self.add_future_state(world_state=world)
-        self.prev_states.append(self.cur_state.get_big_u())
+        self.prev_states.append(self.get_cur_eu())
         self.cur_state = self.pop_future_state()
 
     def add_future_state(self, world_state):
-        heapq.heappush(self.future_states, (world_state.get_big_u() * -1, world_state))
+        heapq.heappush(self.future_states, (world_state.exp_utility * -1, world_state))
 
     def pop_future_state(self):
         return heapq.heappop(self.future_states)[1]
@@ -56,24 +59,18 @@ class WorldStateManager(object):
     def print_cur_state_info(self):
         if self.cur_depth > 0:
             print('\t-> Operator: {}'.format(self.cur_state.prev_op))
-        print('State {}:\t{}'.format(self.cur_depth, self.get_cur_big_u()))
+        print('State {}:\t{}'.format(self.cur_depth, self.get_cur_eu()))
+        print('Prob World: {}'.format(self.cur_state.prob_success))
+        if self.cur_depth > 0:
+            print('Prob Self: ', self.cur_state.self_country.c_prob_success)
+            print('DR: ', self.cur_state.self_country.discount_reward)
 
-    def get_cur_big_u(self):
-        return self.cur_state.get_big_u()
-
-    # product of each individual country probabilities (logistic fxn values)
-    def prob_success(self, world):
-
-        return
-
-    def expected_utility(self):
-        # [ prob_success(schedule_j) * d_reward(country_i, schedule_j) ] + [ (1 - prob_success(schedule_j)) * C ]
-        return
+    def get_cur_eu(self):
+        return self.cur_state.exp_utility
 
 
 def generate_successors(current_state):
     successors = list()
-
     # Add every transformation for every country
     for country in current_state.countries.keys():
         for operator in configuration["definitions"]:
@@ -160,7 +157,7 @@ def run_successor_test(resources_filename, initial_state_filename, operator_def_
     my_state_manager = WorldStateManager(depth_bound=3,
                                          initial_resources=data_import.create_resource_dict(file_name=resources_filename),
                                          initial_countries=data_import.create_country_dict(file_name=initial_state_filename))
-    output_successors_to_excel(file_name=output_schedule_filename, successors=generate_successors(my_state_manager.cur_state))
+    #output_successors_to_excel(file_name=output_schedule_filename, successors=generate_successors(my_state_manager.cur_state))
 
     print('\nExample Search on {}:'.format(resources_filename))
     my_state_manager.execute_search()

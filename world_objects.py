@@ -14,15 +14,16 @@ from math import exp
 from scheduler import *
 
 
+
 # 0 <= gamma < 1 (experiment with different values)
-GAMMA = 0.75
+GAMMA = 0.90
 
 # input to logistic function (experiment with different values)
 X_0 = 0
 K = 1
 
 # negative constant representing cost to country of proposing schedule that fails (experiment with)
-C = -2
+C = -0.1
 
 
 # Represents a single state (i.e. an individual world)
@@ -35,22 +36,26 @@ class World(object):
         self.countries = {}                     # dictionary of country objects
         self.prev_op = None                     # store previous operation details
         self.prob_success = 1
-        self.self_country = ''
+        self.self_country = None
+        self.exp_utility = 0
 
         for country in country_dict:
             if country != 'Self':
-                self_val = False
+
                 name = country
                 resources = country_dict[country]  # resources for specific country
                 if name == country_dict['Self']:
-                    self_val = True
-                    self.self_country = name
-                new_country = Country(name, resources, weight_dict, self_val)  # create country object with name and resources
+                    # set my_country to True because this is the self country
+                    new_country = Country(name, resources, weight_dict, True)  # create country object with name and resources
+                    self.self_country = new_country
+                else:
+                    # set my_country to False because not self country
+                    new_country = Country(name, resources, weight_dict, False)  # create country object with name and resources
                 self.countries[name] = new_country  # add country object to countries dictionary
 
     def __lt__(self, other):
         # referenced from group 7
-        return self.get_big_u() > other.get_big_u()
+        return self.get_exp_utility() > other.get_exp_utility()
 
     def get_deep_copy(self):
         return deepcopy(self)
@@ -78,13 +83,16 @@ class World(object):
         self.countries[destination].resources[resource] += bins
         return True
 
-    def get_big_u(self):
-        u_array = self.little_u_array()
-        sum_u = np.sum(u_array)  # sum of per-capita little-u
-        return sum_u / gini_index(u_array)
+    def update_exp_utility(self):
+        self.exp_utility = (self.prob_success * self.self_country.discount_reward) + ((1 - self.prob_success) * C)
+
+    def get_exp_utility(self):
+        return self.exp_utility
 
     def set_prev_op(self, details):
         self.prev_op = details
+
+
 
 
 # Represents an individual country
@@ -97,7 +105,6 @@ class Country(object):
         self.init_state_q = self.little_u()       # initial state quality for country
         self.discount_reward = 0
         self.c_prob_success = 0
-        self.exp_utility = 0
         self.my_country = self_val
 
 
@@ -136,9 +143,6 @@ class Country(object):
 
     def update_c_prob_success(self):
         self.c_prob_success = self.logistic_fxn(self.discount_reward)
-
-    def update_exp_utility(self, world):
-        self.exp_utility = (world.prob_success * self.discount_reward) + ((1 - world.prob_success) * C)
 
     def transform(self, transformation, bins=1):
         used = dict()
