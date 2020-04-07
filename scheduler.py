@@ -12,7 +12,7 @@ import heapq
 from openpyxl import load_workbook
 
 import data_import
-from world_objects import World
+from world_objects import *
 from config import *
 
 
@@ -39,7 +39,7 @@ class WorldStateManager(object):
         self.cur_depth += 1          # increment depth before updating values?
         for world in generate_successors(self.cur_state):
             for country in world.countries:         # update all measures for each successor before adding future state
-                world.countries[country].update_discount_reward()
+                world.countries[country].update_discount_reward(self.cur_depth)
                 world.countries[country].update_c_prob_success()
                 world.prob_success = world.prob_success * world.countries[country].c_prob_success
                 world.countries[country].update_exp_utility(world)
@@ -60,9 +60,6 @@ class WorldStateManager(object):
 
     def get_cur_big_u(self):
         return self.cur_state.get_big_u()
-
-    def get_cur_depth(self):
-        return self.cur_depth
 
     # product of each individual country probabilities (logistic fxn values)
     def prob_success(self, world):
@@ -177,7 +174,7 @@ def main(argv):
     for name in ['1']:
         run_successor_test(resources_filename='data/resources_{}.xlsx'.format(name),
                            initial_state_filename='data/initial_state_{}.xlsx'.format(name),
-                           operator_def_filename='data/operator_def_3.xlsx',
+                           operator_def_filename='data/operator_def_{}.xlsx'.format(name),
                            output_schedule_filename='data/output_{}.xlsx'.format(name))
 
 

@@ -35,12 +35,18 @@ class World(object):
         self.countries = {}                     # dictionary of country objects
         self.prev_op = None                     # store previous operation details
         self.prob_success = 1
+        self.self_country = ''
 
         for country in country_dict:
-            name = country
-            resources = country_dict[country]  # resources for specific country
-            new_country = Country(name, resources, weight_dict)  # create country object with name and resources
-            self.countries[name] = new_country  # add country object to countries dictionary
+            if country != 'Self':
+                self_val = False
+                name = country
+                resources = country_dict[country]  # resources for specific country
+                if name == country_dict['Self']:
+                    self_val = True
+                    self.self_country = name
+                new_country = Country(name, resources, weight_dict, self_val)  # create country object with name and resources
+                self.countries[name] = new_country  # add country object to countries dictionary
 
     def __lt__(self, other):
         # referenced from group 7
@@ -84,14 +90,15 @@ class World(object):
 # Represents an individual country
 class Country(object):
 
-    def __init__(self, name, resource_dict, weight_dict):
+    def __init__(self, name, resource_dict, weight_dict, self_val):
         self.name = name                          # country name
         self.resources = resource_dict            # dictionary containing amount of resources the country possesses
         self.weights = weight_dict                # dictionary containing resources and corresponding weights
         self.init_state_q = self.little_u()       # initial state quality for country
         self.discount_reward = 0
-        self.c_prob_success =  0
+        self.c_prob_success = 0
         self.exp_utility = 0
+        self.my_country = self_val
 
 
     def little_u(self):
@@ -124,8 +131,8 @@ class Country(object):
     def logistic_fxn(self, dr):
         return 1 / (1 + exp((-K) * (dr - X_0)))
 
-    def update_discount_reward(self):                                           # REFERENCE TEAM 5 FOR THIS DESIGN
-        self.discount_reward = self.d_reward(WorldStateManager.get_cur_depth)
+    def update_discount_reward(self, n):                                           # REFERENCE TEAM 5 FOR THIS DESIGN
+        self.discount_reward = self.d_reward(n)
 
     def update_c_prob_success(self):
         self.c_prob_success = self.logistic_fxn(self.discount_reward)
