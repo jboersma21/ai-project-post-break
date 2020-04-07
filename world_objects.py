@@ -7,23 +7,20 @@ Colin Moody, Ohad Beck, Charlie MacVicar, Jake Boersma
 
 """
 
+from scheduler import *
 from copy import deepcopy
 from config import *
-from auxiliary.inequality_measures import *
-from math import exp
-from scheduler import *
-
-
+from math import *
 
 # 0 <= gamma < 1 (experiment with different values)
-GAMMA = 0.90
+GAMMA = 0.95
 
 # input to logistic function (experiment with different values)
 X_0 = 0
 K = 1
 
 # negative constant representing cost to country of proposing schedule that fails (experiment with)
-C = -0.1
+C = -0.05
 
 
 # Represents a single state (i.e. an individual world)
@@ -92,9 +89,6 @@ class World(object):
     def set_prev_op(self, details):
         self.prev_op = details
 
-
-
-
 # Represents an individual country
 class Country(object):
 
@@ -107,7 +101,6 @@ class Country(object):
         self.c_prob_success = 0
         self.my_country = self_val
 
-
     def little_u(self):
         housing_val = self.weights['R23']*(1 - (self.resources['R1']) / (2 * (self.resources['R23'] + 5)))
         alloy_val = self.weights['R21']*self.resources['R21']
@@ -115,7 +108,8 @@ class Country(object):
         waste_val = (-self.weights["R21'"]*self.resources["R21'"]) - (self.weights["R22'"]*self.resources["R22'"]) - \
                     (-self.weights["R23'"]*self.resources["R23'"])
         population = self.resources['R1']
-        return (housing_val + alloy_val + electronics_val + waste_val) / population
+        util = (housing_val + alloy_val + electronics_val + waste_val) / population
+        return util
 
     """
         Calculates the discounted reward to a country.

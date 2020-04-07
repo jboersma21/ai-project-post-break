@@ -14,7 +14,6 @@ from openpyxl import load_workbook
 import data_import
 from world_objects import *
 from config import *
-from pprint import *
 
 
 # Implement state manager to traverse through of current state, future states, and previous states
@@ -25,14 +24,18 @@ class WorldStateManager(object):
         self.future_states = list()  # priority queue that store states based on big-u
         self.prev_states = list()  # stack of explored states
         self.cur_depth = 0
+        self.depth_bound = depth_bound
 
     # unfinished depth-bound search algorithm
     def execute_search(self):
         self.print_cur_state_info()
+        prev_eu = 0
         while self.get_cur_eu() not in self.prev_states:
             self.go_to_next_state()
+            print("Marginal Utility: ", (self.get_cur_eu() - prev_eu))
+            prev_eu = self.get_cur_eu()
             self.print_cur_state_info()
-            # to-do: add depth-bounded logic
+        # to-do: add depth-bounded logic
 
     def go_to_next_state(self):
         self.future_states = list()  # clear old list of successors?
@@ -43,7 +46,6 @@ class WorldStateManager(object):
                 world.countries[country].update_discount_reward(self.cur_depth)
                 world.countries[country].update_c_prob_success()
                 world.prob_success = world.prob_success * world.countries[country].c_prob_success
-
             world.update_exp_utility()
             world.prob_success = 1
             self.add_future_state(world_state=world)
