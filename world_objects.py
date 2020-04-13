@@ -13,14 +13,14 @@ from config import *
 from math import *
 
 # 0 <= gamma < 1 (experiment with different values)
-GAMMA = 0.95
+GAMMA = 0.75
 
 # input to logistic function (experiment with different values)
 X_0 = 0
 K = 1
 
 # negative constant representing cost to country of proposing schedule that fails (experiment with)
-C = -0.05
+C = -0.25
 
 
 # Represents a single state (i.e. an individual world)
