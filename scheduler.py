@@ -34,7 +34,8 @@ class WorldStateManager(object):
     def execute_search(self):
         self.print_cur_state_info()
         prev_eu = 0
-        while self.get_cur_eu() not in self.prev_states:
+        anytime = True
+        while anytime:
             if self.cur_depth == self.depth_bound:
                 self.cur_depth = 1
                 prev_eu = 0
@@ -64,8 +65,9 @@ class WorldStateManager(object):
         self.prev_states.append(self.get_cur_eu())
 
         self.cur_state = self.pop_future_state()
+        while self.get_cur_eu() in self.prev_states:
+            self.cur_state = self.pop_future_state()
         self.unexplored_states[self.cur_depth] = self.future_states
-
 
     def add_future_state(self, world_state):
         # maintain prio queue max size
@@ -184,7 +186,7 @@ def output_successors_to_excel(file_name, successors):
 def run_successor_test(resources_filename, initial_state_filename, operator_def_filename, output_schedule_filename):
     data_import.read_operator_def_config(file_name=operator_def_filename)
     my_state_manager = WorldStateManager(depth_bound=4,
-                                         frontier_max_size=100,
+                                         frontier_max_size=5,
                                          initial_resources=data_import.create_resource_dict(file_name=resources_filename),
                                          initial_countries=data_import.create_country_dict(file_name=initial_state_filename))
     #output_successors_to_excel(file_name=output_schedule_filename, successors=generate_successors(my_state_manager.cur_state))
