@@ -7,12 +7,10 @@ Colin Moody, Ohad Beck, Charlie MacVicar, Jake Boersma
 
 """
 
+from scheduler import *
 from copy import deepcopy
 from config import *
-from auxiliary.inequality_measures import *
-from math import exp
-from scheduler import *
-
+from math import *
 
 # 0 <= gamma < 1 (experiment with different values)
 GAMMA = 0.75
@@ -22,7 +20,7 @@ X_0 = 0
 K = 1
 
 # negative constant representing cost to country of proposing schedule that fails (experiment with)
-C = -2
+C = -0.25
 
 
 # Represents a single state (i.e. an individual world)
@@ -35,16 +33,26 @@ class World(object):
         self.countries = {}                     # dictionary of country objects
         self.prev_op = None                     # store previous operation details
         self.prob_success = 1
+        self.self_country = None
+        self.exp_utility = 0
 
         for country in country_dict:
-            name = country
-            resources = country_dict[country]  # resources for specific country
-            new_country = Country(name, resources, weight_dict)  # create country object with name and resources
-            self.countries[name] = new_country  # add country object to countries dictionary
+            if country != 'Self':
+
+                name = country
+                resources = country_dict[country]  # resources for specific country
+                if name == country_dict['Self']:
+                    # set my_country to True because this is the self country
+                    new_country = Country(name, resources, weight_dict, True)  # create country object with name and resources
+                    self.self_country = new_country
+                else:
+                    # set my_country to False because not self country
+                    new_country = Country(name, resources, weight_dict, False)  # create country object with name and resources
+                self.countries[name] = new_country  # add country object to countries dictionary
 
     def __lt__(self, other):
         # referenced from group 7
-        return self.get_big_u() > other.get_big_u()
+        return self.get_exp_utility() > other.get_exp_utility()
 
     def get_deep_copy(self):
         return deepcopy(self)
@@ -72,27 +80,26 @@ class World(object):
         self.countries[destination].resources[resource] += bins
         return True
 
-    def get_big_u(self):
-        u_array = self.little_u_array()
-        sum_u = np.sum(u_array)  # sum of per-capita little-u
-        return sum_u / gini_index(u_array)
+    def update_exp_utility(self):
+        self.exp_utility = (self.prob_success * self.self_country.discount_reward) + ((1 - self.prob_success) * C)
+
+    def get_exp_utility(self):
+        return self.exp_utility
 
     def set_prev_op(self, details):
         self.prev_op = details
 
-
 # Represents an individual country
 class Country(object):
 
-    def __init__(self, name, resource_dict, weight_dict):
+    def __init__(self, name, resource_dict, weight_dict, self_val):
         self.name = name                          # country name
         self.resources = resource_dict            # dictionary containing amount of resources the country possesses
         self.weights = weight_dict                # dictionary containing resources and corresponding weights
         self.init_state_q = self.little_u()       # initial state quality for country
         self.discount_reward = 0
-        self.c_prob_success =  0
-        self.exp_utility = 0
-
+        self.c_prob_success = 0
+        self.my_country = self_val
 
     def little_u(self):
         housing_val = self.weights['R23']*(1 - (self.resources['R1']) / (2 * (self.resources['R23'] + 5)))
@@ -101,7 +108,8 @@ class Country(object):
         waste_val = (-self.weights["R21'"]*self.resources["R21'"]) - (self.weights["R22'"]*self.resources["R22'"]) - \
                     (-self.weights["R23'"]*self.resources["R23'"])
         population = self.resources['R1']
-        return (housing_val + alloy_val + electronics_val + waste_val) / population
+        util = (housing_val + alloy_val + electronics_val + waste_val) / population
+        return util
 
     """
         Calculates the discounted reward to a country.
@@ -124,14 +132,11 @@ class Country(object):
     def logistic_fxn(self, dr):
         return 1 / (1 + exp((-K) * (dr - X_0)))
 
-    def update_discount_reward(self):                                           # REFERENCE TEAM 5 FOR THIS DESIGN
-        self.discount_reward = self.d_reward(WorldStateManager.get_cur_depth)
+    def update_discount_reward(self, n):                                           # REFERENCE TEAM 5 FOR THIS DESIGN
+        self.discount_reward = self.d_reward(n)
 
     def update_c_prob_success(self):
         self.c_prob_success = self.logistic_fxn(self.discount_reward)
-
-    def update_exp_utility(self, world):
-        return (world.prob_success * self.discount_reward) + ((1 - world.prob_success) * C)
 
     def transform(self, transformation, bins=1):
         used = dict()
