@@ -20,71 +20,94 @@ import pprint
 # Implement state manager to traverse through of current state, future states, and previous states
 class WorldStateManager(object):
 
-    def __init__(self, depth_bound, frontier_max_size, initial_resources, initial_countries):
+    def __init__(self, depth_bound, frontier_max_size, initial_resources, initial_countries, num_output_schedules):
         self.cur_state = World(d_bound=depth_bound, weight_dict=initial_resources, country_dict=initial_countries)
-        self.future_states = list()  # priority queue that store states based on big-u
+        self.frontier_queue = list()  # priority queue that store states
         self.prev_states = list()  # stack of explored states
-        self.unexplored_states = dict()
         self.cur_depth = 0
         self.depth_bound = depth_bound
         self.frontier_max_size = frontier_max_size
         self.inter_prob_success = 0
+        self.init_output_schedules = num_output_schedules
+        self.output_schedules_left = num_output_schedules
+        self.completed_sched_eu = []
+
 
     # unfinished depth-bound search algorithm
     def execute_search(self):
-        self.print_cur_state_info()
-        prev_eu = 0
-        anytime = True
-        while anytime:
-            if self.cur_depth == self.depth_bound:
-                self.cur_depth = 1
-                prev_eu = 0
-                self.cur_state = self.pop_unexplored_state(1)
-                self.print_cur_state_info()
-                print("Marginal Utility: ", (self.get_cur_eu() - prev_eu))
-                prev_eu = self.get_cur_eu()
+        self.cur_state.prev_op.append("None: State 0")
+        heapq.heappush(self.frontier_queue, (self.cur_state.exp_utility * -1, self.cur_state))
+
+        while self.output_schedules_left > 0:
+            # if self.cur_depth == self.depth_bound:
+            #     self.cur_depth = 1
+            #     prev_eu = 0
+            #     #self.cur_state = self.pop_unexplored_state(1)
+            #     self.print_cur_state_info()
+            #     print("Marginal Utility: ", (self.get_cur_eu() - prev_eu))
+            #     prev_eu = self.get_cur_eu()
+
             self.go_to_next_state()
-            self.print_cur_state_info()
-            print("Marginal Utility: ", (self.get_cur_eu() - prev_eu))
-            prev_eu = self.get_cur_eu()
+            #self.print_cur_state_info()
+            #print("Marginal Utility: ", (self.get_cur_eu() - prev_eu))
+            #prev_eu = self.get_cur_eu()
         # to-do: add depth-bounded logic
 
     def go_to_next_state(self):
-        self.future_states = list()  # clear old list of successors?
+        successors_queue = list()
         self.cur_depth += 1          # increment depth before updating values?
-
+        self.cur_state = self.pop_future_state()
         for world in generate_successors(self.cur_state):
-            for country in world.countries:         # update all measures for each successor before adding future state
-                world.countries[country].update_discount_reward(self.cur_depth)
+            world.search_depth += 1
+            for country in world.countries:                     # update all measures for each successor before adding future state
+                world.countries[country].update_discount_reward(world.search_depth)
                 world.countries[country].update_c_prob_success()
                 world.prob_success = world.prob_success * world.countries[country].c_prob_success
             world.update_exp_utility()
             self.inter_prob_success = world.prob_success
-            world.prob_success = 1
-            self.add_future_state(world_state=world)
+            world.prob_success = 1  # update back to 1 after calculating EU
+
+            # self.add_future_state(world_state=world)
+            heapq.heappush(successors_queue, (world.exp_utility * -1, world))
         self.prev_states.append(self.get_cur_eu())
+        while len(self.frontier_queue) < self.frontier_max_size:
+            next_successor = heapq.heappop(successors_queue)[1]
+            next_successor.prev_eu.append(self.get_cur_eu())
+            cur_eu = next_successor.exp_utility
+            if next_successor.search_depth == self.depth_bound:
+                if cur_eu in self.completed_sched_eu:
+                    return
+                else:
+                    next_successor.prev_eu.append(cur_eu)
+                    self.completed_sched_eu.append(cur_eu)
+                    self.output_schedules_left -= 1
+                    print("Schedule #: ", self.init_output_schedules - self.output_schedules_left)
+                    for i in range(0, len(next_successor.prev_eu)):
+                        print("\nSearch Depth: ", i)
+                        print('\t', next_successor.prev_op[i])
+                        print('\t', next_successor.prev_eu[i])
+                    print("\n\n")
+                    return
+            else:
 
-        self.cur_state = self.pop_future_state()
-        while self.get_cur_eu() in self.prev_states:
-            self.cur_state = self.pop_future_state()
-        self.unexplored_states[self.cur_depth] = self.future_states
+                heapq.heappush(self.frontier_queue, (next_successor.exp_utility * -1, next_successor))
 
-    def add_future_state(self, world_state):
-        # maintain prio queue max size
-        #      --> if max size reached, add state if better EU than worst currently in queue
-        if len(self.future_states) == self.frontier_max_size:
-            if (world_state.exp_utility * -1) < heapq.nlargest(1, self.future_states)[0][0]:
-                self.future_states.remove(heapq.nlargest(1, self.future_states)[0])
-                heapq.heappush(self.future_states, (world_state.exp_utility * -1, world_state))
-        else:
-            heapq.heappush(self.future_states, (world_state.exp_utility * -1, world_state))
+    #
+    # def add_future_state(self, world_state):
+    #     # maintain prio queue max size
+    #     #      --> if max size reached, add state if better EU than worst currently in queue
+    #     if len(self.frontier_queue) == self.frontier_max_size:
+    #         raise ValueError('Error: frontier max size exceeded')
+    #     elif len(self.frontier_queue) == self.frontier_max_size:
+    #         if (world_state.exp_utility * -1) < heapq.nlargest(1, self.frontier_queue)[0][0]:
+    #             self.frontier_queue.remove(heapq.nlargest(1, self.frontier_queue)[0])
+    #             heapq.heappush(self.frontier_queue, (world_state.exp_utility * -1, world_state))
+    #     else:
+    #         heapq.heappush(self.frontier_queue, (world_state.exp_utility * -1, world_state))
 
 
     def pop_future_state(self):
-        return heapq.heappop(self.future_states)[1]
-
-    def pop_unexplored_state(self, depth):
-        return heapq.heappop(self.unexplored_states[depth])[1]
+        return heapq.heappop(self.frontier_queue)[1]
 
     def print_cur_state_info(self):
         if self.cur_depth > 0:
@@ -98,8 +121,6 @@ class WorldStateManager(object):
     def get_cur_eu(self):
         return self.cur_state.exp_utility
 
-
-
 def generate_successors(current_state):
     successors = list()
     # Add every transformation for every country
@@ -111,9 +132,9 @@ def generate_successors(current_state):
                 while tmp_world.countries[country].transform(transformation=operator, bins=bins):
                     ins = [i * bins for i in configuration['definitions'][operator]["in"].values()]
                     outs = [i * bins for i in configuration['definitions'][operator]["out"].values()]
-                    tmp_world.set_prev_op('{} (in={} out={}) (bins={})'.format(operator, ins, outs, bins))
+                    tmp_world.update_prev_op('{} (in={} out={}) (bins={}) country={}'.format(operator, ins, outs, bins, country))
                     successors.append(tmp_world)
-                    bins *= 2
+                    bins += 5
                     tmp_world = current_state.get_deep_copy()
 
     # Add every transfer for every pair of countries (both ways)
@@ -124,10 +145,10 @@ def generate_successors(current_state):
                     tmp_world = current_state.get_deep_copy()
                     bins = 1
                     while tmp_world.transfer(exporter=exporter, destination=destination, resource=resource, bins=bins):
-                        tmp_world.set_prev_op('{} (from={} to={} resource={} amount={})'
+                        tmp_world.update_prev_op('{} (from={} to={} resource={} amount={})'
                                               ''.format('transfer', exporter, destination, resource, bins))
                         successors.append(tmp_world)
-                        bins *= 2
+                        bins += 5
                         tmp_world = current_state.get_deep_copy()
 
     return successors
@@ -185,10 +206,11 @@ def output_successors_to_excel(file_name, successors):
 
 def run_successor_test(resources_filename, initial_state_filename, operator_def_filename, output_schedule_filename):
     data_import.read_operator_def_config(file_name=operator_def_filename)
-    my_state_manager = WorldStateManager(depth_bound=4,
-                                         frontier_max_size=5,
+    my_state_manager = WorldStateManager(depth_bound=3,
+                                         frontier_max_size=100,
                                          initial_resources=data_import.create_resource_dict(file_name=resources_filename),
-                                         initial_countries=data_import.create_country_dict(file_name=initial_state_filename))
+                                         initial_countries=data_import.create_country_dict(file_name=initial_state_filename),
+                                         num_output_schedules=25)
     #output_successors_to_excel(file_name=output_schedule_filename, successors=generate_successors(my_state_manager.cur_state))
 
     print('\nExample Search on {}:'.format(resources_filename))

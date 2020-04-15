@@ -13,14 +13,14 @@ from config import *
 from math import *
 
 # 0 <= gamma < 1 (experiment with different values)
-GAMMA = 0.75
+GAMMA = 0.9
 
 # input to logistic function (experiment with different values)
 X_0 = 0
 K = 1
 
 # negative constant representing cost to country of proposing schedule that fails (experiment with)
-C = -0.25
+C = -0.20
 
 
 # Represents a single state (i.e. an individual world)
@@ -31,10 +31,12 @@ class World(object):
         self.d_bound = d_bound                  # deepest level at which successors are generated
         self.weights = weight_dict              # resources and their corresponding weights
         self.countries = {}                     # dictionary of country objects
-        self.prev_op = None                     # store previous operation details
+        self.prev_op = []                     # store previous operation details
+        self.prev_eu = []
         self.prob_success = 1
         self.self_country = None
         self.exp_utility = 0
+        self.search_depth = 0
 
         for country in country_dict:
             if country != 'Self':
@@ -86,8 +88,8 @@ class World(object):
     def get_exp_utility(self):
         return self.exp_utility
 
-    def set_prev_op(self, details):
-        self.prev_op = details
+    def update_prev_op(self, details):
+        self.prev_op.append(details)
 
 # Represents an individual country
 class Country(object):
