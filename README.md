@@ -1,6 +1,6 @@
-# Project in AI post break deliverable
-<h1> Group 6 </h1>
-<h2>Jake Boersma, Charlie MacVicar, Ohad Beck, Colin Moody</h2>
-<h3>Search algorithm </h3>
-<h3>State handling</h3>
-<h3>Data import</h3>
+# Project in AI post break deliverable - Group 6
+<h1>Jake Boersma, Charlie MacVicar, Ohad Beck, Colin Moody</h1>
+<h2>Search algorithm </h2>
+jk
+<h2>State handling</h2>
+<h2>Data import</h2>
