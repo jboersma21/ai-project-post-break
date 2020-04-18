@@ -69,7 +69,7 @@ class World(object):
     def little_u_array(self):
         u_lst = []
         for country in self.countries.values():
-            utility = country.little_u()
+            utility = country.state_quality()
             u_lst.append(utility)
 
         return np.array(u_lst)
@@ -98,12 +98,12 @@ class Country(object):
         self.name = name                          # country name
         self.resources = resource_dict            # dictionary containing amount of resources the country possesses
         self.weights = weight_dict                # dictionary containing resources and corresponding weights
-        self.init_state_q = self.little_u()       # initial state quality for country
+        self.init_state_q = self.state_quality()       # initial state quality for country
         self.discount_reward = 0
         self.c_prob_success = 0
         self.my_country = self_val
 
-    def little_u(self):
+    def state_quality(self):
         housing_val = self.weights['R23']*(1 - (self.resources['R1']) / (2 * (self.resources['R23'] + 5)))
         alloy_val = self.weights['R21']*self.resources['R21']
         electronics_val = self.weights['R22']*self.resources['R22']
@@ -122,7 +122,7 @@ class Country(object):
      """
 
     def d_reward(self, n):
-        return (GAMMA ** n) * (self.little_u() - self.init_state_q)
+        return (GAMMA ** n) * (self.state_quality() - self.init_state_q)
         # country's current state quality minus its initial state quality
 
     """

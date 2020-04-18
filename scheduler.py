@@ -10,12 +10,10 @@ Colin Moody, Ohad Beck, Charlie MacVicar, Jake Boersma
 import sys
 import heapq
 from openpyxl import load_workbook
-
 import data_import
 from world_objects import *
 from config import *
 import pprint
-
 
 # Implement state manager to traverse through of current state, future states, and previous states
 class WorldStateManager(object):
@@ -134,7 +132,7 @@ def generate_successors(current_state):
                     outs = [i * bins for i in configuration['definitions'][operator]["out"].values()]
                     tmp_world.update_prev_op('{} (in={} out={}) (bins={}) country={}'.format(operator, ins, outs, bins, country))
                     successors.append(tmp_world)
-                    bins += 5
+                    bins *= 2
                     tmp_world = current_state.get_deep_copy()
 
     # Add every transfer for every pair of countries (both ways)
@@ -148,7 +146,7 @@ def generate_successors(current_state):
                         tmp_world.update_prev_op('{} (from={} to={} resource={} amount={})'
                                               ''.format('transfer', exporter, destination, resource, bins))
                         successors.append(tmp_world)
-                        bins += 5
+                        bins *= 2
                         tmp_world = current_state.get_deep_copy()
 
     return successors
