@@ -102,10 +102,10 @@ def read_operator_def_config(file_name=OPERATOR_DEF_DATA_FILE):
                 counter += 1
 
             for i in range(input_idx + 1, output_idx, 2):
-                configuration["definitions"][op_name]["in"].update({split_lst[i]: split_lst[i + 1]})
+                configuration["definitions"][op_name]["in"].update({split_lst[i]: int(split_lst[i + 1])})
 
             for j in range(output_idx + 1, len(split_lst), 2):
-                configuration["definitions"][op_name]["out"].update({split_lst[j]: split_lst[j + 1]})
+                configuration["definitions"][op_name]["out"].update({split_lst[j]: int(split_lst[j + 1])})
 
 def col_letter(col_num):
     letter_dict = dict(enumerate(string.ascii_uppercase, 1))

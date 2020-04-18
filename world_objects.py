@@ -66,17 +66,9 @@ class World(object):
             for resource in country_obj.resources:
                 print('\t' + resource, country_obj.resources[resource])
 
-    def little_u_array(self):
-        u_lst = []
-        for country in self.countries.values():
-            utility = country.state_quality()
-            u_lst.append(utility)
-
-        return np.array(u_lst)
-
     def transfer(self, exporter, destination, resource, bins=1):
         available = self.countries[exporter].resources[resource]
-        if (available < bins and resource != "R1") or available <= bins:    # avoid exporting entire population
+        if (available < bins and resource != "R1") or available <= bins:    # avoid exporting entire populations
             return False
         self.countries[exporter].resources[resource] -= bins
         self.countries[destination].resources[resource] += bins
@@ -93,7 +85,6 @@ class World(object):
 
 # Represents an individual country
 class Country(object):
-
     def __init__(self, name, resource_dict, weight_dict, self_val):
         self.name = name                          # country name
         self.resources = resource_dict            # dictionary containing amount of resources the country possesses
@@ -107,10 +98,18 @@ class Country(object):
         housing_val = self.weights['R23']*(1 - (self.resources['R1']) / (2 * (self.resources['R23'] + 5)))
         alloy_val = self.weights['R21']*self.resources['R21']
         electronics_val = self.weights['R22']*self.resources['R22']
+        food_val = self.weights['R24']*self.resources['R24']
+        farm_val = self.weights['R25'] * self.resources['R25']
+        fossilEnergyUsable_val = self.weights['R26'] * self.resources['R26']
+        renewableEnergyUsable_val = self.weights['R27'] * self.resources['R27']
+
         waste_val = (-self.weights["R21'"]*self.resources["R21'"]) - (self.weights["R22'"]*self.resources["R22'"]) - \
-                    (-self.weights["R23'"]*self.resources["R23'"])
+                    (-self.weights["R23'"]*self.resources["R23'"]) - (-self.weights["R24'"]*self.resources["R24'"]) - \
+                    (-self.weights["R25'"] * self.resources["R25'"]) - (-self.weights["R26'"]*self.resources["R26'"]) - \
+                    (-self.weights["R27'"] * self.resources["R27'"])
         population = self.resources['R1']
-        util = (housing_val + alloy_val + electronics_val + waste_val) / population
+        util = (housing_val + alloy_val + electronics_val + food_val + farm_val + fossilEnergyUsable_val
+                + renewableEnergyUsable_val+ waste_val) / population
         return util
 
     """
@@ -126,10 +125,10 @@ class Country(object):
         # country's current state quality minus its initial state quality
 
     """
-            Calculates the logistic function value for a country.
-            Determines the probability that a country will participate in a given schedule.
-            @param dr (float) - discounted reward
-            @return (float) - logistic fxn probability 
+        Calculates the logistic function value for a country.
+        Determines the probability that a country will participate in a given schedule.
+        @param dr (float) - discounted reward
+        @return (float) - logistic fxn probability 
     """
     def logistic_fxn(self, dr):
         return 1 / (1 + exp((-K) * (dr - X_0)))

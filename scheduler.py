@@ -201,7 +201,6 @@ def output_successors_to_excel(file_name, successors):
     wb.save(file_name)
 
 
-
 def run_successor_test(resources_filename, initial_state_filename, operator_def_filename, output_schedule_filename):
     data_import.read_operator_def_config(file_name=operator_def_filename)
     my_state_manager = WorldStateManager(depth_bound=3,
@@ -214,7 +213,6 @@ def run_successor_test(resources_filename, initial_state_filename, operator_def_
     print('\nExample Search on {}:'.format(resources_filename))
     my_state_manager.execute_search()
     print('\n')
-
 
 def main(argv):
     # for name in ['Test1', 'Test2', 'Test3', 'Test4']:
