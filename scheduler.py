@@ -16,8 +16,8 @@ import matplotlib.pyplot as plt
 
 
 NUM_TEST_FILES = 7
-DEPTH_BOUND = 10
-NUM_OUTPUT_SCHEDULES = 5
+DEPTH_BOUND = 25
+NUM_OUTPUT_SCHEDULES = 1
 MAX_FRONTIER_SIZE = 50
 
 # Implement state manager to traverse through of current state, future states, and previous states
@@ -149,8 +149,9 @@ def generate_successors(current_state):
     return successors
 
 def game_scheduler(resources_filename, initial_state_filename, operator_def_filename, output_schedule_filename,
-                   num_output_schedules, depth_bound, frontier_max_size):
+                   parameter_filename,num_output_schedules, depth_bound, frontier_max_size):
     data_import.read_operator_def_config(operator_def_filename)
+    data_import.read_paramater_def_config(parameter_filename)
     my_state_manager = GameScheduler(depth_bound,
                                      frontier_max_size,
                                      data_import.create_resource_dict(resources_filename),
@@ -168,6 +169,7 @@ def main(argv):
                        initial_state_filename='data/initial_state_{}.xlsx'.format(name),
                        operator_def_filename='data/operator_def_1.xlsx'.format(name),
                        output_schedule_filename='data/output_{}.csv'.format(name),
+                       parameter_filename='data/parameters_1.xlsx'.format(name),
                        num_output_schedules=NUM_OUTPUT_SCHEDULES,
                        depth_bound=DEPTH_BOUND,
                        frontier_max_size=MAX_FRONTIER_SIZE)

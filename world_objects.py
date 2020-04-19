@@ -12,16 +12,6 @@ from copy import deepcopy
 from config import *
 from math import *
 
-# 0 <= gamma < 1 (experiment with different values)
-GAMMA = 0.95
-
-# input to logistic function (experiment with different values)
-X_0 = 0
-K = 1
-
-# negative constant representing cost to country of proposing schedule that fails (experiment with)
-C = -0.2
-
 
 # Represents a single state (i.e. an individual world)
 class World(object):
@@ -97,7 +87,9 @@ class World(object):
         return True
 
     def update_exp_utility(self):
-        self.exp_utility = (self.prob_success * self.self_country.discount_reward) + ((1 - self.prob_success) * C)
+        # C = negative constant representing cost to country of proposing schedule that fails (experiment with)
+        self.exp_utility = (self.prob_success * self.self_country.discount_reward) + ((1 - self.prob_success)
+                                                                                 * configuration["parameters"]["C"])
 
     def get_exp_utility(self):
         return self.exp_utility
@@ -145,7 +137,8 @@ class Country(object):
      """
 
     def d_reward(self, n):
-        return (GAMMA ** n) * (self.state_quality() - self.init_state_q)
+        # 0 <= gamma < 1 (experiment with different values)
+        return (configuration["parameters"]["GAMMA"] ** n) * (self.state_quality() - self.init_state_q)
         # country's current state quality minus its initial state quality
 
     """
@@ -155,7 +148,9 @@ class Country(object):
         @return (float) - logistic fxn probability 
     """
     def logistic_fxn(self, dr):
-        return 1 / (1 + exp((-K) * (dr - X_0)))
+        # input to logistic function (experiment with different values)
+        # K and X_0
+        return 1 / (1 + exp((-configuration["parameters"]["K"]) * (dr - configuration["parameters"]["X_0"])))
 
     def update_discount_reward(self, n):                                           # REFERENCE TEAM 5 FOR THIS DESIGN
         self.discount_reward = self.d_reward(n)
