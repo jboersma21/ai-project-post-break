@@ -13,14 +13,14 @@ from config import *
 from math import *
 
 # 0 <= gamma < 1 (experiment with different values)
-GAMMA = 0.9
+GAMMA = 0.90
 
 # input to logistic function (experiment with different values)
 X_0 = 0
 K = 1
 
 # negative constant representing cost to country of proposing schedule that fails (experiment with)
-C = -0.20
+C = -0.2
 
 
 # Represents a single state (i.e. an individual world)
@@ -33,10 +33,11 @@ class World(object):
         self.countries = {}                     # dictionary of country objects
         self.prev_op = []                     # store previous operation details
         self.prev_eu = []
-        self.prob_success = 1
         self.self_country = None
+        self.prob_success = 1
         self.exp_utility = 0
         self.search_depth = 0
+        self.referenced_countries = []
 
         for country in country_dict:
             if country != 'Self':
@@ -66,12 +67,44 @@ class World(object):
             for resource in country_obj.resources:
                 print('\t' + resource, country_obj.resources[resource])
 
-    def transfer(self, exporter, destination, resource, bins=1):
+    def transfer(self, exporter, destination, resource, bins):
         available = self.countries[exporter].resources[resource]
-        if (available < bins and resource != "R1") or available <= bins:    # avoid exporting entire populations
+        amt = ceil(available * bins)
+        if available < amt or resource == "R1":   # avoid exporting entire populations
             return False
-        self.countries[exporter].resources[resource] -= bins
-        self.countries[destination].resources[resource] += bins
+        self.countries[exporter].resources[resource] -= amt
+        self.countries[destination].resources[resource] += amt
+
+        self.update_prev_op('(TRANSFER {} {} ({} {}))'.format(exporter, destination, resource, amt))
+        return True
+
+    def transform(self, transformation, bins, country):
+        used = dict()
+        multiplier = dict()
+        for resource, amount in configuration['definitions'][transformation]["in"].items():
+            # amount *= bins
+            amt = ceil(self.countries[country].resources[resource] * bins)
+            multiplier[resource] = amt / amount
+        min_mult = floor(min(multiplier.values()))
+        if (min_mult == 0):
+            min_mult = 1
+        for resource, amount in configuration['definitions'][transformation]["in"].items():
+            use_amt = amount * min_mult
+            if self.countries[country].resources[resource] < use_amt:
+                return False
+            self.countries[country].resources[resource] -= min_mult
+        for resource, amount in configuration['definitions'][transformation]["out"].items():
+            self.countries[country].resources[resource] += (amount * min_mult)
+
+        ins = ()
+        outs = ()
+        for i, j in configuration['definitions'][transformation]["in"].items():
+
+            val = j*min_mult
+            ins += (i, val),
+        for i, j in configuration['definitions'][transformation]["out"].items():
+            outs += (i, j * min_mult),
+        self.update_prev_op('(TRANSFORM {} (INPUTS {} (OUTPUTS {})'.format(country, ins, outs))
         return True
 
     def update_exp_utility(self):
@@ -95,21 +128,20 @@ class Country(object):
         self.my_country = self_val
 
     def state_quality(self):
-        housing_val = self.weights['R23']*(1 - (self.resources['R1']) / (2 * (self.resources['R23'] + 5)))
+        housing_val = self.weights['R23']*(1 - (self.resources['R1']) / (3 * (self.resources['R23'] + 5)))
         alloy_val = self.weights['R21']*self.resources['R21']
         electronics_val = self.weights['R22']*self.resources['R22']
         food_val = self.weights['R24']*self.resources['R24']
         farm_val = self.weights['R25'] * self.resources['R25']
         fossilEnergyUsable_val = self.weights['R26'] * self.resources['R26']
         renewableEnergyUsable_val = self.weights['R27'] * self.resources['R27']
-
         waste_val = (-self.weights["R21'"]*self.resources["R21'"]) - (self.weights["R22'"]*self.resources["R22'"]) - \
-                    (-self.weights["R23'"]*self.resources["R23'"]) - (-self.weights["R24'"]*self.resources["R24'"]) - \
-                    (-self.weights["R25'"] * self.resources["R25'"]) - (-self.weights["R26'"]*self.resources["R26'"]) - \
-                    (-self.weights["R27'"] * self.resources["R27'"])
+                    (self.weights["R23'"]*self.resources["R23'"]) - (self.weights["R24'"]*self.resources["R24'"]) - \
+                    (self.weights["R25'"] * self.resources["R25'"]) - (self.weights["R26'"]*self.resources["R26'"]) - \
+                    (self.weights["R27'"] * self.resources["R27'"])
         population = self.resources['R1']
         util = (housing_val + alloy_val + electronics_val + food_val + farm_val + fossilEnergyUsable_val
-                + renewableEnergyUsable_val+ waste_val) / population
+                + renewableEnergyUsable_val + waste_val) / population
         return util
 
     """
@@ -139,15 +171,4 @@ class Country(object):
     def update_c_prob_success(self):
         self.c_prob_success = self.logistic_fxn(self.discount_reward)
 
-    def transform(self, transformation, bins=1):
-        used = dict()
-        for resource, amount in configuration['definitions'][transformation]["in"].items():
-            amount *= bins
-            if self.resources[resource] < amount:
-                return False
-            used[resource] = amount
-        for resource, amount in used.items():
-            self.resources[resource] -= amount
-        for resource, amount in configuration['definitions'][transformation]["out"].items():
-            self.resources[resource] += amount * bins
-        return True
+

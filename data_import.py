@@ -133,7 +133,8 @@ def print_country_dict(dic):
 
 
 if __name__ == '__main__':
-    create_resource_dict('data/resources_1.xlsx')
+    pprint(create_resource_dict('data/resources_1.xlsx'))
+    pprint(create_country_dict('data/initial_state_1.xlsx'))
     read_operator_def_config('data/operator_def_1.xlsx')
     pprint(configuration)
 
