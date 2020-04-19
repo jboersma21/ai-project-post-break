@@ -150,7 +150,11 @@ class Country(object):
     def logistic_fxn(self, dr):
         # input to logistic function (experiment with different values)
         # K and X_0
-        return 1 / (1 + exp((-configuration["parameters"]["K"]) * (dr - configuration["parameters"]["X_0"])))
+        try:
+            prob_success = 1 / (1 + exp((-configuration["parameters"]["K"]) * (dr - configuration["parameters"]["X_0"])))
+        except OverflowError as error:
+            prob_success = 0
+        return prob_success
 
     def update_discount_reward(self, n):                                           # REFERENCE TEAM 5 FOR THIS DESIGN
         self.discount_reward = self.d_reward(n)
