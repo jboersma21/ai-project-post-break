@@ -11,11 +11,16 @@ from world_objects import *
 from config import *
 import csv
 
+import numpy as np
+import matplotlib.pyplot as plt
+
 
 NUM_TEST_FILES = 7
 DEPTH_BOUND = 5
 NUM_OUTPUT_SCHEDULES = 5
 MAX_FRONTIER_SIZE = 100
+
+
 
 # Implement state manager to traverse through of current state, future states, and previous states
 class GameScheduler(object):
@@ -31,6 +36,7 @@ class GameScheduler(object):
         self.completed_sched_eu = []
         self.output_data = dict()
 
+
     # unfinished depth-bound search algorithm
     def execute_search(self):
         open(self.output_file, "w").close()             # clear file if already has output in it
@@ -43,6 +49,10 @@ class GameScheduler(object):
         print('-> sending results to csv')
         self.output_results()
         print('-> csv output complete\n')
+        plt.xlabel('Depth of Search')
+        plt.ylabel('Expected Utility')
+        plt.legend()
+        plt.show()
 
     def go_to_next_state(self):
         successors_queue = list()
@@ -73,11 +83,15 @@ class GameScheduler(object):
                     self.output_schedules_left -= 1
                     schedule_index = self.init_output_schedules - self.output_schedules_left
                     schedule_summary = list()
-
+                    x_coord = np.array([])
+                    y_coord = np.array([])
                     for i in range(1, len(next_successor.prev_eu)):
                         op_name, op_details = next_successor.prev_op[i].splitlines()
                         op_details = op_details.replace('\t', '')
                         schedule_summary.append((i, op_name, op_details, next_successor.prev_eu[i]))
+                        x_coord = np.append(x_coord, [i])
+                        y_coord = np.append(y_coord, [next_successor.prev_eu[i]])
+                    plt.plot(x_coord, y_coord, marker='*', label="Schedule " + str(schedule_index))
 
                     self.output_data[schedule_index] = schedule_summary
                     print('-> schedule {} of {} complete'.format(schedule_index, self.init_output_schedules))
