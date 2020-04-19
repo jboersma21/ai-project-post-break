@@ -12,9 +12,9 @@ from config import *
 import csv
 
 
-NUM_TEST_FILES = 1
+NUM_TEST_FILES = 7
 DEPTH_BOUND = 5
-NUM_OUTPUT_SCHEDULES = 4
+NUM_OUTPUT_SCHEDULES = 5
 MAX_FRONTIER_SIZE = 100
 
 # Implement state manager to traverse through of current state, future states, and previous states
