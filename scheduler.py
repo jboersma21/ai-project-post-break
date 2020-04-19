@@ -7,9 +7,16 @@ Colin Moody, Ohad Beck, Charlie MacVicar, Jake Boersma
 import sys
 import heapq
 import data_import
+import csv
 from world_objects import *
 from config import *
 import pprint
+
+NUM_TEST_FILES = 1
+DEPTH_BOUND = 5
+NUM_OUTPUT_SCHEDULES = 30
+MAX_FRONTIER_SIZE = 100
+
 
 # Implement state manager to traverse through of current state, future states, and previous states
 class GameScheduler(object):
@@ -18,12 +25,15 @@ class GameScheduler(object):
         self.output_file = output_schedule_filename
         self.frontier_queue = list()  # priority queue that store states
         self.prev_states = list()  # stack of explored states
+
         self.depth_bound = depth_bound
         self.frontier_max_size = frontier_max_size
         self.inter_prob_success = 0
         self.init_output_schedules = num_output_schedules
         self.output_schedules_left = num_output_schedules
         self.completed_sched_eu = []
+
+        self.output_data = dict()
 
     # unfinished depth-bound search algorithm
     def execute_search(self):
@@ -34,12 +44,17 @@ class GameScheduler(object):
         while self.output_schedules_left > 0:
             self.go_to_next_state()
 
+        print('-> search complete')
+        print('-> sending results to csv')
+        self.output_results()
+        print('-> csv output complete\n')
+
     def go_to_next_state(self):
         successors_queue = list()
         self.cur_state = self.pop_future_state()
         for world in generate_successors(self.cur_state):
             world.search_depth += 1
-            for country in world.countries:                     # update all measures for each successor before adding future state
+            for country in world.countries:         # update all measures for each successor before adding future state
                 world.countries[country].update_discount_reward(world.search_depth)
                 world.countries[country].update_c_prob_success()
             for referenced in world.referenced_countries:
@@ -62,16 +77,17 @@ class GameScheduler(object):
                     next_successor.prev_eu.append(cur_eu)
                     self.completed_sched_eu.append(cur_eu)
                     self.output_schedules_left -= 1
-                    output_str = "Schedule #: " + str(self.init_output_schedules - self.output_schedules_left) + "\n"
-                    print("Schedule #: ", self.init_output_schedules - self.output_schedules_left)
-                    for i in range(0, len(next_successor.prev_eu)):
-                        print("\nSearch Depth: ", i)
-                        output_str += "\nSearch Depth: " + str(i)
-                        print('\t', next_successor.prev_op[i], " EU:", next_successor.prev_eu[i])
-                        output_str += '\t' + str(next_successor.prev_op[i]) + "EU:" + str(next_successor.prev_eu[i]) + "\n"
-                    output_str += "\n\n"
-                    print("\n\n")
-                    output_to_file(self.output_file, output_str)
+
+                    schedule_index = self.init_output_schedules - self.output_schedules_left
+                    schedule_summary = list()
+
+                    for i in range(1, len(next_successor.prev_eu)):
+                        op_name, op_details = next_successor.prev_op[i].splitlines()
+                        op_details = op_details.replace('\t', '')
+                        schedule_summary.append((i, op_name, op_details, next_successor.prev_eu[i]))
+
+                    self.output_data[schedule_index] = schedule_summary
+                    print('-> schedule {} of {} complete'.format(schedule_index, self.init_output_schedules))
                     return
             else:
                 heapq.heappush(self.frontier_queue, (next_successor.exp_utility * -1, next_successor))
@@ -79,9 +95,19 @@ class GameScheduler(object):
     def pop_future_state(self):
         return heapq.heappop(self.frontier_queue)[1]
 
-
     def get_cur_eu(self):
         return self.cur_state.exp_utility
+
+    def output_results(self):
+        with open(self.output_file, 'w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(['Schedule', 'Depth', 'Operator Name', 'State Details'])
+            for index in range(1, self.init_output_schedules + 1):
+                for step in self.output_data[index]:
+                    depth, op_name, op_details, eu = step
+                    writer.writerow([index, depth, op_name, '{}  EU: {}'.format(op_details, eu)])
+                writer.writerow(['', '', '', ''])
+
 
 def generate_successors(current_state):
     successors = list()
@@ -123,6 +149,7 @@ def output_to_file(file_name, output_str):
     output_file.write(output_str)
     output_file.close()
 
+
 def game_scheduler(resources_filename, initial_state_filename, operator_def_filename, output_schedule_filename,
                    num_output_schedules, depth_bound, frontier_max_size):
     data_import.read_operator_def_config(operator_def_filename)
@@ -136,13 +163,18 @@ def game_scheduler(resources_filename, initial_state_filename, operator_def_file
     my_state_manager.execute_search()
     print('\n')
 
+
 def main(argv):
-    for name in ['1']:
+    for test in range(1, NUM_TEST_FILES + 1):
+        name = str(test)
         game_scheduler(resources_filename='data/resources_{}.xlsx'.format(name),
                        initial_state_filename='data/initial_state_{}.xlsx'.format(name),
                        operator_def_filename='data/operator_def_{}.xlsx'.format(name),
-                       output_schedule_filename='data/output_{}.txt'.format(name), num_output_schedules=30,
-                       depth_bound=5, frontier_max_size=100)
+                       output_schedule_filename='data/output_{}.csv'.format(name),
+                       num_output_schedules=NUM_OUTPUT_SCHEDULES,
+                       depth_bound=DEPTH_BOUND,
+                       frontier_max_size=MAX_FRONTIER_SIZE)
+
 
 if __name__ == "__main__":
     main(sys.argv)
