@@ -13,7 +13,7 @@ from config import *
 from math import *
 
 # 0 <= gamma < 1 (experiment with different values)
-GAMMA = 0.90
+GAMMA = 0.95
 
 # input to logistic function (experiment with different values)
 X_0 = 0
@@ -60,13 +60,6 @@ class World(object):
     def get_deep_copy(self):
         return deepcopy(self)
 
-    def print_search_state(self):
-        for country in self.countries:
-            country_obj = self.countries[country]
-            print(country)
-            for resource in country_obj.resources:
-                print('\t' + resource, country_obj.resources[resource])
-
     def transfer(self, exporter, destination, resource, bins):
         available = self.countries[exporter].resources[resource]
         amt = ceil(available * bins)
@@ -81,7 +74,6 @@ class World(object):
     def transform(self, transformation, bins, country):
         multiplier = dict()
         for resource, amount in configuration['definitions'][transformation]["in"].items():
-            # amount *= bins
             amt = ceil(self.countries[country].resources[resource] * bins)
             multiplier[resource] = amt / amount
         min_mult = floor(min(multiplier.values()))
@@ -91,7 +83,7 @@ class World(object):
             use_amt = amount * min_mult
             if self.countries[country].resources[resource] < use_amt:
                 return False
-            self.countries[country].resources[resource] -= min_mult
+            self.countries[country].resources[resource] -= use_amt
         for resource, amount in configuration['definitions'][transformation]["out"].items():
             self.countries[country].resources[resource] += (amount * min_mult)
 
@@ -125,20 +117,23 @@ class Country(object):
         self.my_country = self_val
 
     def state_quality(self):
-        housing_val = self.weights['R23']*(1 - (self.resources['R1']) / (3 * (self.resources['R23'] + 5)))
-        alloy_val = self.weights['R21']*self.resources['R21']
-        electronics_val = self.weights['R22']*self.resources['R22']
-        food_val = self.weights['R24']*self.resources['R24']
-        farm_val = self.weights['R25'] * self.resources['R25']
-        fossilEnergyUsable_val = self.weights['R26'] * self.resources['R26']
-        renewableEnergyUsable_val = self.weights['R27'] * self.resources['R27']
-        waste_val = (-self.weights["R21'"]*self.resources["R21'"]) - (self.weights["R22'"]*self.resources["R22'"]) - \
-                    (self.weights["R23'"]*self.resources["R23'"]) - (self.weights["R24'"]*self.resources["R24'"]) - \
-                    (self.weights["R25'"] * self.resources["R25'"]) - (self.weights["R26'"]*self.resources["R26'"]) - \
-                    (self.weights["R27'"] * self.resources["R27'"])
         population = self.resources['R1']
-        util = (housing_val + alloy_val + electronics_val + food_val + farm_val + fossilEnergyUsable_val
-                + renewableEnergyUsable_val + waste_val) / population
+        housing_val = self.weights['R23'] * (1 - population / (3 * (self.resources['R23'] + 5)))
+        alloy_val = self.weights['R21'] * (1 - population / (self.resources['R21'] + 5))
+        electronics_val = self.weights['R22'] * (1 - population / (self.resources['R22'] + 5))
+        food_val = self.weights['R24'] * (1 - population / (3 * (self.resources['R24'] + 5)))
+        farm_val = self.weights['R25'] * (1 - population / (50 * (self.resources['R25'] + 5)))
+
+        fossilEnergyUsable_val = self.weights['R26'] * (1 - population / (30 * (self.resources['R26'] + 5)))
+        renewableEnergyUsable_val = self.weights['R27'] * (1 - population / (40 * (self.resources['R27'] + 5)))
+
+        waste_val = (-self.weights["R21'"] * self.resources["R21'"]) - (self.weights["R22'"] * self.resources["R22'"]) - \
+                    (self.weights["R23'"] * self.resources["R23'"]) - (self.weights["R24'"] * self.resources["R24'"]) - \
+                    (self.weights["R25'"] * self.resources["R25'"]) - (self.weights["R26'"] * self.resources["R26'"]) - \
+                    (self.weights["R27'"] * self.resources["R27'"])
+
+        util = housing_val + food_val + fossilEnergyUsable_val + renewableEnergyUsable_val + electronics_val + \
+               alloy_val + farm_val + (waste_val / (5 * population))
         return util
 
     """
