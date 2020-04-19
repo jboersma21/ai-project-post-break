@@ -75,18 +75,17 @@ class World(object):
         self.countries[exporter].resources[resource] -= amt
         self.countries[destination].resources[resource] += amt
 
-        self.update_prev_op('(TRANSFER {} {} ({} {}))'.format(exporter, destination, resource, amt))
+        self.update_prev_op('transfer' + '\n\t' +'(TRANSFER {} {} ({} {}))'.format(exporter, destination, resource, amt))
         return True
 
     def transform(self, transformation, bins, country):
-        used = dict()
         multiplier = dict()
         for resource, amount in configuration['definitions'][transformation]["in"].items():
             # amount *= bins
             amt = ceil(self.countries[country].resources[resource] * bins)
             multiplier[resource] = amt / amount
         min_mult = floor(min(multiplier.values()))
-        if (min_mult == 0):
+        if min_mult == 0:
             min_mult = 1
         for resource, amount in configuration['definitions'][transformation]["in"].items():
             use_amt = amount * min_mult
@@ -99,12 +98,10 @@ class World(object):
         ins = ()
         outs = ()
         for i, j in configuration['definitions'][transformation]["in"].items():
-
-            val = j*min_mult
-            ins += (i, val),
+            ins += (i, j * min_mult),
         for i, j in configuration['definitions'][transformation]["out"].items():
             outs += (i, j * min_mult),
-        self.update_prev_op('(TRANSFORM {} (INPUTS {} (OUTPUTS {})'.format(country, ins, outs))
+        self.update_prev_op(transformation + '\n\t' + '(TRANSFORM {} (INPUTS {} (OUTPUTS {})'.format(country, ins, outs))
         return True
 
     def update_exp_utility(self):

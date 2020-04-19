@@ -18,7 +18,6 @@ class GameScheduler(object):
         self.output_file = output_schedule_filename
         self.frontier_queue = list()  # priority queue that store states
         self.prev_states = list()  # stack of explored states
-        self.cur_depth = 0
         self.depth_bound = depth_bound
         self.frontier_max_size = frontier_max_size
         self.inter_prob_success = 0
@@ -49,9 +48,9 @@ class GameScheduler(object):
             self.inter_prob_success = world.prob_success
             world.prob_success = 1  # update back to 1 after calculating EU
 
-            # self.add_future_state(world_state=world)
             heapq.heappush(successors_queue, (world.exp_utility * -1, world))
         self.prev_states.append(self.get_cur_eu())
+
         while len(self.frontier_queue) < self.frontier_max_size:
             next_successor = heapq.heappop(successors_queue)[1]
             next_successor.prev_eu.append(self.get_cur_eu())
@@ -69,13 +68,12 @@ class GameScheduler(object):
                         print("\nSearch Depth: ", i)
                         output_str += "\nSearch Depth: " + str(i)
                         print('\t', next_successor.prev_op[i], " EU:", next_successor.prev_eu[i])
-                        output_str += '\t' +  str(next_successor.prev_op[i]) + "EU:" + str(next_successor.prev_eu[i]) + "\n"
+                        output_str += '\t' + str(next_successor.prev_op[i]) + "EU:" + str(next_successor.prev_eu[i]) + "\n"
                     output_str += "\n\n"
                     print("\n\n")
                     output_to_file(self.output_file, output_str)
                     return
             else:
-
                 heapq.heappush(self.frontier_queue, (next_successor.exp_utility * -1, next_successor))
 
     def pop_future_state(self):
@@ -143,7 +141,7 @@ def main(argv):
         game_scheduler(resources_filename='data/resources_{}.xlsx'.format(name),
                        initial_state_filename='data/initial_state_{}.xlsx'.format(name),
                        operator_def_filename='data/operator_def_{}.xlsx'.format(name),
-                       output_schedule_filename='data/output_{}.txt'.format(name), num_output_schedules=10,
+                       output_schedule_filename='data/output_{}.txt'.format(name), num_output_schedules=30,
                        depth_bound=5, frontier_max_size=100)
 
 if __name__ == "__main__":
