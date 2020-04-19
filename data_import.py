@@ -54,10 +54,15 @@ def create_country_dict(file_name):
     return country_dict
 
 
-"""
-    use operator_def_1.xlsx
-"""
 def read_operator_def_config(file_name):
+    """
+    Reads in operator definitions from Excel file into config.py
+    Format of File:
+        Operator = TRANSFORM or TRANSFER
+        Operation Name = name of operation (i.e. alloys_transform)
+        Definition = formatted as tuple in first-order logic
+    Values: dictionary where key = resource_name and value = resource_amount
+    """
     wb = load_workbook(file_name)
     op_sheet = wb['Operators']
 
@@ -102,6 +107,11 @@ def read_operator_def_config(file_name):
                 configuration["definitions"][op_name]["out"].update({split_lst[j]: int(split_lst[j + 1])})
 
 def read_paramater_def_config(parameter_filename):
+    """
+    Populations parameters dictionary in config.py
+    Name: name of parameter
+    Value: value of parameter
+    """
     wb = load_workbook(parameter_filename)
     param_sheet = wb['Parameters']
     for row in range(2, param_sheet.max_row + 1):
@@ -137,8 +147,8 @@ def print_country_dict(dic):
 
 
 if __name__ == '__main__':
-    # pprint(create_resource_dict('data/resources_1.xlsx'))
-    # pprint(create_country_dict('data/initial_state_1.xlsx'))
+    create_resource_dict('data/resources_1.xlsx')
+    create_country_dict('data/initial_state_1.xlsx')
     read_operator_def_config('data/operator_def_1.xlsx')
     read_paramater_def_config('data/parameters_1.xlsx')
     pprint(configuration)
