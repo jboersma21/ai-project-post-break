@@ -117,20 +117,23 @@ class Country(object):
         self.my_country = self_val
 
     def state_quality(self):
-        housing_val = self.weights['R23']*(1 - (self.resources['R1']) / (3 * (self.resources['R23'] + 5)))
-        alloy_val = self.weights['R21']*self.resources['R21']
-        electronics_val = self.weights['R22']*self.resources['R22']
-        food_val = self.weights['R24']*self.resources['R24']
-        farm_val = self.weights['R25'] * self.resources['R25']
-        fossilEnergyUsable_val = self.weights['R26'] * self.resources['R26']
-        renewableEnergyUsable_val = self.weights['R27'] * self.resources['R27']
-        waste_val = (-self.weights["R21'"]*self.resources["R21'"]) - (self.weights["R22'"]*self.resources["R22'"]) - \
-                    (self.weights["R23'"]*self.resources["R23'"]) - (self.weights["R24'"]*self.resources["R24'"]) - \
-                    (self.weights["R25'"] * self.resources["R25'"]) - (self.weights["R26'"]*self.resources["R26'"]) - \
-                    (self.weights["R27'"] * self.resources["R27'"])
         population = self.resources['R1']
-        util = (housing_val + alloy_val + electronics_val + food_val + farm_val + fossilEnergyUsable_val
-                + renewableEnergyUsable_val + waste_val) / population
+        housing_val = self.weights['R23'] * (1 - population / (3 * (self.resources['R23'] + 5)))
+        alloy_val = self.weights['R21'] * (1 - population / (self.resources['R21'] + 5))
+        electronics_val = self.weights['R22'] * (1 - population / (self.resources['R22'] + 5))
+        food_val = self.weights['R24'] * (1 - population / (3 * (self.resources['R24'] + 5)))
+        farm_val = self.weights['R25'] * (1 - population / (50 * (self.resources['R25'] + 5)))
+
+        fossilEnergyUsable_val = self.weights['R26'] * (1 - population / (30 * (self.resources['R26'] + 5)))
+        renewableEnergyUsable_val = self.weights['R27'] * (1 - population / (40 * (self.resources['R27'] + 5)))
+
+        waste_val = (-self.weights["R21'"] * self.resources["R21'"]) - (self.weights["R22'"] * self.resources["R22'"]) - \
+                    (self.weights["R23'"] * self.resources["R23'"]) - (self.weights["R24'"] * self.resources["R24'"]) - \
+                    (self.weights["R25'"] * self.resources["R25'"]) - (self.weights["R26'"] * self.resources["R26'"]) - \
+                    (self.weights["R27'"] * self.resources["R27'"])
+
+        util = housing_val + food_val + fossilEnergyUsable_val + renewableEnergyUsable_val + electronics_val + \
+               alloy_val + farm_val + (waste_val / (5 * population))
         return util
 
     """

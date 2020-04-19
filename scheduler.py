@@ -16,11 +16,9 @@ import matplotlib.pyplot as plt
 
 
 NUM_TEST_FILES = 7
-DEPTH_BOUND = 5
+DEPTH_BOUND = 10
 NUM_OUTPUT_SCHEDULES = 5
-MAX_FRONTIER_SIZE = 100
-
-
+MAX_FRONTIER_SIZE = 50
 
 # Implement state manager to traverse through of current state, future states, and previous states
 class GameScheduler(object):
@@ -51,8 +49,9 @@ class GameScheduler(object):
         print('-> csv output complete\n')
         plt.xlabel('Depth of Search')
         plt.ylabel('Expected Utility')
+        plt.xlim(0, DEPTH_BOUND + 1)
+        plt.ylim(0, None)
         plt.legend()
-        plt.show()
 
     def go_to_next_state(self):
         successors_queue = list()
@@ -76,7 +75,7 @@ class GameScheduler(object):
             cur_eu = next_successor.exp_utility
             if next_successor.search_depth == self.depth_bound:
                 if cur_eu in self.completed_sched_eu:
-                    return
+                    continue
                 else:
                     next_successor.prev_eu.append(cur_eu)
                     self.completed_sched_eu.append(cur_eu)
@@ -165,13 +164,16 @@ def game_scheduler(resources_filename, initial_state_filename, operator_def_file
 def main(argv):
     for test in range(1, NUM_TEST_FILES + 1):
         name = str(test)
-        game_scheduler(resources_filename='data/resources_{}.xlsx'.format(name),
+        game_scheduler(resources_filename='data/resources_1.xlsx'.format(name),
                        initial_state_filename='data/initial_state_{}.xlsx'.format(name),
-                       operator_def_filename='data/operator_def_{}.xlsx'.format(name),
+                       operator_def_filename='data/operator_def_1.xlsx'.format(name),
                        output_schedule_filename='data/output_{}.csv'.format(name),
                        num_output_schedules=NUM_OUTPUT_SCHEDULES,
                        depth_bound=DEPTH_BOUND,
                        frontier_max_size=MAX_FRONTIER_SIZE)
+
+        plt.savefig('data/plots/plot_{}.png'.format(name))
+    sys.exit()
 
 if __name__ == "__main__":
     main(sys.argv)
