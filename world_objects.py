@@ -13,7 +13,7 @@ from config import *
 from math import *
 
 # 0 <= gamma < 1 (experiment with different values)
-GAMMA = 0.90
+GAMMA = 0.95
 
 # input to logistic function (experiment with different values)
 X_0 = 0
@@ -60,13 +60,6 @@ class World(object):
     def get_deep_copy(self):
         return deepcopy(self)
 
-    def print_search_state(self):
-        for country in self.countries:
-            country_obj = self.countries[country]
-            print(country)
-            for resource in country_obj.resources:
-                print('\t' + resource, country_obj.resources[resource])
-
     def transfer(self, exporter, destination, resource, bins):
         available = self.countries[exporter].resources[resource]
         amt = ceil(available * bins)
@@ -81,7 +74,6 @@ class World(object):
     def transform(self, transformation, bins, country):
         multiplier = dict()
         for resource, amount in configuration['definitions'][transformation]["in"].items():
-            # amount *= bins
             amt = ceil(self.countries[country].resources[resource] * bins)
             multiplier[resource] = amt / amount
         min_mult = floor(min(multiplier.values()))
@@ -91,7 +83,7 @@ class World(object):
             use_amt = amount * min_mult
             if self.countries[country].resources[resource] < use_amt:
                 return False
-            self.countries[country].resources[resource] -= min_mult
+            self.countries[country].resources[resource] -= use_amt
         for resource, amount in configuration['definitions'][transformation]["out"].items():
             self.countries[country].resources[resource] += (amount * min_mult)
 

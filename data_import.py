@@ -12,14 +12,8 @@ from config import *
 import re
 from pprint import *
 
-DATA_FILE = 'data/Pre_Break/Initial-World.xlsx'
 
-RESOURCE_DATA_FILE = 'data/resources.xlsx'
-INITIAL_STATE_DATA_FILE = 'data/initial_state.xlsx'
-OPERATOR_DEF_DATA_FILE = 'data/operator_def.xlsx'
-
-
-def create_resource_dict(file_name=RESOURCE_DATA_FILE):
+def create_resource_dict(file_name):
     """
     Creates a dictionary containing resource and weight info.
     Keys: name of resource
@@ -37,7 +31,7 @@ def create_resource_dict(file_name=RESOURCE_DATA_FILE):
     return resource_dict
 
 
-def create_country_dict(file_name=INITIAL_STATE_DATA_FILE):
+def create_country_dict(file_name):
     """
     Creates a dictionary containing country info.
     Keys: name of country
@@ -63,7 +57,7 @@ def create_country_dict(file_name=INITIAL_STATE_DATA_FILE):
 """
     use operator_def_1.xlsx
 """
-def read_operator_def_config(file_name=OPERATOR_DEF_DATA_FILE):
+def read_operator_def_config(file_name):
     wb = load_workbook(file_name)
     op_sheet = wb['Operators']
 
