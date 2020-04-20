@@ -3,6 +3,7 @@
 
 <h2>How to Run the Code</h2>
 1. Make sure you have the following packages installed (install with pip):
+
     - matplotlib
     - numpy
     - openpyxl
