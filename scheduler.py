@@ -15,7 +15,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-NUM_TEST_FILES = 7
+NUM_TEST_FILES = 8
+NUM_PARAM_SETS = 9
 DEPTH_BOUND = 10
 NUM_OUTPUT_SCHEDULES = 5
 MAX_FRONTIER_SIZE = 50
@@ -149,8 +150,9 @@ def generate_successors(current_state):
     return successors
 
 def game_scheduler(resources_filename, initial_state_filename, operator_def_filename, output_schedule_filename,
-                   num_output_schedules, depth_bound, frontier_max_size):
+                   parameter_filename,num_output_schedules, depth_bound, frontier_max_size):
     data_import.read_operator_def_config(operator_def_filename)
+    data_import.read_paramater_def_config(parameter_filename)
     my_state_manager = GameScheduler(depth_bound,
                                      frontier_max_size,
                                      data_import.create_resource_dict(resources_filename),
@@ -165,14 +167,28 @@ def main(argv):
     for test in range(1, NUM_TEST_FILES + 1):
         name = str(test)
         game_scheduler(resources_filename='data/resources_1.xlsx'.format(name),
-                       initial_state_filename='data/initial_state_{}.xlsx'.format(name),
+                       initial_state_filename='data/initial_states/initial_state_{}.xlsx'.format(name),
                        operator_def_filename='data/operator_def_1.xlsx'.format(name),
-                       output_schedule_filename='data/output_{}.csv'.format(name),
+                       output_schedule_filename='data/outputs/output_{}-1.csv'.format(name),
+                       parameter_filename='data/parameter_sets/parameters_1.xlsx'.format(name),
                        num_output_schedules=NUM_OUTPUT_SCHEDULES,
                        depth_bound=DEPTH_BOUND,
                        frontier_max_size=MAX_FRONTIER_SIZE)
 
-        plt.savefig('data/plots/plot_{}.png'.format(name))
+        plt.savefig('data/plots/plot_{}-1.png'.format(name))
+
+    for test in range(1, NUM_PARAM_SETS + 1):
+        name = str(test)
+        game_scheduler(resources_filename='data/resources_1.xlsx'.format(name),
+                       initial_state_filename='data/initial_states/initial_state_1.xlsx'.format(name),
+                       operator_def_filename='data/operator_def_1.xlsx'.format(name),
+                       output_schedule_filename='data/outputs/output_1-{}.csv'.format(name),
+                       parameter_filename='data/parameter_sets/parameters_{}.xlsx'.format(name),
+                       num_output_schedules=NUM_OUTPUT_SCHEDULES,
+                       depth_bound=DEPTH_BOUND,
+                       frontier_max_size=MAX_FRONTIER_SIZE)
+
+        plt.savefig('data/plots/plot_1-{}.png'.format(name))
     sys.exit()
 
 if __name__ == "__main__":

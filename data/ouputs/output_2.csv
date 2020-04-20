@@ -1,0 +1,7 @@
+Schedule,Depth,Operator Name,State Details
+1,1,alloys_transform,"(TRANSFORM Atlantis (INPUTS (('R1', 1050), ('R2', 700)) (OUTPUTS (('R1', 1050), ('R21', 350), (""R21'"", 350)))  EU: 135.83408253138072"
+1,2,food_transform,"(TRANSFORM Atlantis (INPUTS (('R25', 66), ('R5', 198), ('R21', 132)) (OUTPUTS (('R24', 198), (""R24'"", 66)))  EU: 200.47411290440849"
+1,3,transfer,(TRANSFER Atlantis Brobdingnag (R22 250))  EU: 181.9682269536267
+1,4,transfer,(TRANSFER Brobdingnag Atlantis (R22 188))  EU: 179.30813909329441
+1,5,transfer,(TRANSFER Brobdingnag Atlantis (R22 47))  EU: 171.3693425666006
+,,,

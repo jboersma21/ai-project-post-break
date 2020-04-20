@@ -101,6 +101,16 @@ def read_operator_def_config(file_name):
             for j in range(output_idx + 1, len(split_lst), 2):
                 configuration["definitions"][op_name]["out"].update({split_lst[j]: int(split_lst[j + 1])})
 
+def read_paramater_def_config(parameter_filename):
+    wb = load_workbook(parameter_filename)
+    param_sheet = wb['Parameters']
+    for row in range(2, param_sheet.max_row + 1):
+        name = get_val(param_sheet, 'A', row)
+        value = get_val(param_sheet, 'B', row)
+        if name is not None:
+            configuration["parameters"][name] = value
+
+
 def col_letter(col_num):
     letter_dict = dict(enumerate(string.ascii_uppercase, 1))
     return letter_dict[col_num]
@@ -127,9 +137,10 @@ def print_country_dict(dic):
 
 
 if __name__ == '__main__':
-    pprint(create_resource_dict('data/resources_1.xlsx'))
-    pprint(create_country_dict('data/initial_state_1.xlsx'))
+    # pprint(create_resource_dict('data/resources_1.xlsx'))
+    # pprint(create_country_dict('data/initial_state_1.xlsx'))
     read_operator_def_config('data/operator_def_1.xlsx')
+    read_paramater_def_config('data/parameters_1.xlsx')
     pprint(configuration)
 
 
