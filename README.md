@@ -4,12 +4,12 @@
 <h2>How to Run the Code</h2>
 1. Make sure you have the following packages installed (install with pip):
 
-    - matplotlib
-    - numpy
-    - openpyxl
-    - scipy
-    - setuptools
-    - six
+        matplotlib
+        numpy
+        openpyxl
+        scipy
+        setuptools
+        six
     
 2. Create an initial state using the following formatting: initial_state_<>.py. Start with '1' (i.e. initial_state_1.py) and increase for your desired number of test files.
     - File should be located under /data/initial_states/initial_state_<>.py
