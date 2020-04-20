@@ -11,7 +11,7 @@
     - six
     
 2. Create an initial state using the following formatting: initial_state_<>.py. Start with '1' (i.e. initial_state_1.py) and increase for your desired number of test files.
-    - File should be located under /data/initial_state_<>.py
+    - File should be located under /data/initial_states/initial_state_<>.py
 
 3. Open scheduler.py and define the following class constant variables (at the top of the file):
     - NUM_TEST_FILES -           however many test files/initial states you are scheduling for (1 to n)
@@ -23,7 +23,7 @@
 
         python3 scheduler.py
 
-5. Review output in output_<>.csv. There will be a separate file for each initial state you created.
+5. Review output in /data/outputs/output_<>.csv. There will be a separate file for each initial state you created.
   
 
 <h2>Notes</h2>
